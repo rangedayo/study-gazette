@@ -53,6 +53,31 @@ const PROJECTS = [
     ],
     stack: ["Gemini Vision", "ChromaDB RAG", "gpt-4o-mini", "FastAPI", "Next.js", "Firebase"],
     links: [{ label: "GitHub", url: "https://github.com/rangedayo/plant-diagnosis" }],
+    body: `
+## 화분이 시들어가는데, 이유를 모를 때
+
+물을 더 줘야 하나 덜 줘야 하나, 아니면 병에 걸린 건가. 식물 사진 한 장으로 그 답을 주는 서비스를 만들고 싶었다.
+
+## 가장 무서운 실수부터 정의했다
+
+진단에서 위험한 건 오진의 '방향'이다. 진짜 아픈 식물을 "건강해요"라고 안심시키면 사람은 식물을 그냥 죽게 둔다. 그래서 나는 **아픈 식물을 건강으로 오진하는 것을 0건으로 두는 것**을 첫 번째 절대 규칙으로 삼았고, 끝까지 0건을 지켰다.
+
+## AI를 혼낸다고 환각이 멈추진 않았다
+
+처음엔 AI가 없는 병을 지어내는 게 문제라 봤다. 프롬프트에 "소설 쓰지 마라"는 규칙을 넣고 모델도 최신형으로 바꿔봤다. 네 번 시도했고, 측정해보니 전부 효과가 없었다. 입력을 아무리 잘 달래도 안 풀리는 영역이 있다는 걸 데이터로 확인한 순간이었다.
+
+## 그래서 입력 대신 출력을 고쳤다
+
+설득을 포기하고, AI가 답을 내놓은 뒤에서 과잉진단을 교정하는 장치를 붙였다. 잎 끝의 옅은 변색 같은 미용적 증상은 건강으로 내리되, 진짜 병변 단어가 하나라도 보이면 절대 손대지 않는다. 그 결과 **헛걱정(오탐)을 절반으로 줄였다** — 놓치면 안 되는 케이스는 0건을 지키면서.
+
+## 진단을 넘어 서비스로
+
+여기에 객관식 후속 질문으로 보정하는 2차 진단, 내 식물 기록과 시간순 비교 기능까지 얹어 실제로 쓸 수 있는 형태로 만들었다.
+
+> 가장 자랑스러운 건 정확도 숫자가 아니라, 안 되는 걸 측정으로 인정하고 방향을 바꾼 과정이다.
+
+기술적인 파이프라인과 측정 방법은 GitHub에 자세히 정리해 두었다.
+`,
   },
   {
     id: "p2", title: "전국 17개 시도 태양광 발전량 예측 + ESS 운영 시뮬레이션", kind: "시계열 ML · 데이터 분석",
@@ -64,6 +89,27 @@ const PROJECTS = [
     ],
     stack: ["XGBoost", "LSTM", "AutoGluon", "scipy LP (MPC)", "FastAPI", "Streamlit"],
     links: [{ label: "GitHub", url: "https://github.com/rangedayo/energy-time-series-forecast" }],
+    body: `
+## "더 정확하면 더 이득"일까?
+
+태양광 발전량을 더 정확히 예측하면 배터리(ESS)를 더 잘 굴려 돈을 더 벌 것이다 — 당연해 보이는 가정에서 출발했다. 그런데 측정해보니 그 가정이 틀렸다.
+
+## 모델은 제대로 골랐지만
+
+XGBoost, LSTM, 트랜스포머까지 같은 파이프라인에서 비교했고 XGBoost가 가장 정확했다(Naive 대비 오차 **55.8% 감소**). 그런데 여기서 이상한 일이 벌어졌다. 완벽한 예측을 넣어도 운영 수익은 **0.08%밖에 안 늘었다.**
+
+## 진짜 답은 시스템 구조에 있었다
+
+결과를 거의 전부 결정한 건 예측 정확도가 아니라, 배터리를 언제 왜 쓰는지(운영 전략)였다. 같은 데이터에서 평가 지표만 바꿔도 결론이 갈렸다. "정확도를 올리자"가 아니라 "무엇이 실제로 결과를 만드는가"를 봐야 했다.
+
+## 좋아 보이는 숫자를 의심한 순간
+
+한번은 LSTM이 운영 지표에서 더 좋아 보였다. 그냥 "LSTM이 낫네" 하고 넘어갈 수도 있었다. 하지만 그 차이가 어디서 오는지 시뮬레이터를 뜯어봤고, 알고 보니 모델 성능이 아니라 **시뮬레이터의 분기 버그** 때문이었다. 눈에 보이는 결과를 그대로 믿지 않은 게 이 프로젝트의 핵심이다.
+
+> 더 정확한 모델을 만드는 것보다, 무엇이 결과를 만드는지 아는 게 먼저였다.
+
+17개 지역 × 6개 운영 정책으로 1년치를 실증한 분석과 코드는 GitHub에 있다.
+`,
   },
   {
     id: "p3", title: "심울림 — 발달장애인 감정·상태 전달 인터페이스", kind: "창업경진대회 · 팀 프로젝트",
@@ -79,6 +125,21 @@ const PROJECTS = [
       { label: "Live · 웹", url: "https://simullim-dashboard-web.vercel.app/" },
       { label: "랜딩", url: "https://simullim-landing.vercel.app/" },
     ],
+    body: `
+## 말로 표현하기 어려운 마음을 대신 전하기
+
+발달장애인은 감정과 상태를 말로 표현하기 어려운 경우가 많고, 보호자는 돌발 행동을 늦게 알아차려 사고로 이어지기도 한다. 심울림은 웨어러블의 심박변이도(HRV) 신호로 정서·각성 상태를 감지해 보호자에게 전하는 커뮤니케이션 솔루션이다. 2026 보건의료빅데이터·AI 활용 창업경진대회 출품작(팀 '프로젝트 헤일레이').
+
+## 내가 맡은 부분
+
+팀 프로젝트에서 나는 **설문조사 데이터 분석, 공공데이터 기반 문제·시장 규모 추산, 전용 디바이스 디자인 시안, 기대효과 설계**를 담당했다. 기술 아이디어가 왜 필요한지를 데이터로 뒷받침하고, 그것을 사람들이 이해할 수 있는 제품 형태로 그려내는 역할이었다.
+
+## 배운 것
+
+혼자 쓰는 코드와 달리, 여러 사람의 작업을 하나의 설득력 있는 제안으로 모으는 경험이었다. 대시보드·랜딩·브로셔까지 실제 배포해 아이디어를 끝까지 형태로 만드는 과정을 마쳤다.
+
+> 기술은 결국 사람의 문제를 풀기 위한 도구라는 걸, 가장 약한 사용자를 위한 설계에서 다시 확인했다.
+`,
   },
 ];
 
@@ -607,9 +668,6 @@ export default function StudyGazette() {
               ))}
             </div>
 
-            <p style={{ marginTop: "2rem", padding: "1rem 1.2rem", border: `1px dashed ${C.mute}`, background: C.panel, borderRadius: 2, fontFamily: FM, fontSize: ".82rem", color: C.mute, lineHeight: 1.7 }}>
-              ✎ GitHub 주소와 대표 스크린샷을 넣으면 더 완성됩니다. 카드를 누르면 프로젝트 상세가 열립니다.
-            </p>
           </section>
         )}
 
@@ -622,6 +680,8 @@ export default function StudyGazette() {
             <div className="dbl-top dbl-bot" style={{ height: 280, margin: "0 0 2rem", overflow: "hidden" }}><Art seed={curProj.id + curProj.title} /></div>
 
             <p style={{ fontSize: "1.08rem", color: C.body, lineHeight: 1.85, margin: "0 0 1.8rem" }}>{curProj.summary}</p>
+
+            {curProj.body && <div style={{ fontSize: "1.05rem", marginBottom: "2.4rem" }}><Body text={curProj.body} /></div>}
 
             <div className="eyebrow dbl-bot" style={{ paddingBottom: ".5rem", marginBottom: "1rem" }}>Highlights</div>
             <ul className="g-ul" style={{ margin: "0 0 2rem" }}>
