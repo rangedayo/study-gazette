@@ -5,9 +5,9 @@ import POSTS_DATA from "../data/posts.json";
 
 /* ════════════════════════════════════════════════════════════
    The Study Gazette — 읽기 전용 전시 페이지 (포트폴리오 + 공부 정리)
-   디자인: 활판 인쇄소(letterpress) 골격 + 미드센추리 갱지 색감
-   - 머스터드 #C8742B (메인) / 벽돌 #A33A28 (포인트) / 흙갈색 #2B2117 (잉크)
-   - 밝은 크림 바탕 #FBF8F0, 가로 괘선, 이중 규칙선(double rule), 표제 구조
+   디자인: 활판 인쇄소(letterpress) 골격 + 차분한 슬레이트/그레이지 색감
+   - 슬레이트블루 #5F7480 (메인) / 클레이 #9B7568 (포인트) / 쿨차콜 #2C313A (잉크)
+   - 그레이지 바탕 #EBE9E3, 연한 그레이지 테두리 #C6C0B4, 이중 규칙선, 표제 구조
    - display: Playfair Display(블랙) / body: Inter / 캡션: DM Mono
    데이터: knowledge_garden 에디터의 저장소를 그대로 읽음 (글쓰기는 거기서)
 
@@ -19,8 +19,9 @@ import POSTS_DATA from "../data/posts.json";
    ════════════════════════════════════════════════════════════ */
 
 const C = {
-  bg: "#FBF8F0", panel: "#FFFDF7", ink: "#2B2117", body: "#54493B", mute: "#90836D",
-  rule: "#E0D7C4", mustard: "#C8742B", brick: "#A33A28", tintM: "#F1E1C9", tintB: "#EFD8CF",
+  bg: "#EBE9E3", panel: "#F4F2EC", ink: "#2C313A", body: "#50545C", mute: "#928F86",
+  rule: "#D5D1C8", mustard: "#5F7480", brick: "#9B7568", tintM: "#DEE3E3", tintB: "#E7DDD6",
+  frame: "#C6C0B4", accentD: "#4C5E68",
 };
 const FD = "'Playfair Display', Georgia, serif";
 const FB = "'Inter', -apple-system, system-ui, sans-serif";
@@ -311,7 +312,7 @@ export default function StudyGazette() {
     .navlink{font-family:${FB};font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:${C.body};padding:.3rem 0;background:none;border:none;position:relative}
     .navlink:hover{color:${C.ink}} .navlink.on{color:${C.ink}}
     .navlink.on:after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:2px;background:${C.mustard}}
-    .ed{background:${C.mustard};color:${C.bg};border:1.5px solid ${C.ink};border-radius:2px;padding:11px 26px;font-family:${FB};font-size:13px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;transition:background .3s ease}
+    .ed{background:${C.mustard};color:${C.bg};border:1.5px solid ${C.accentD};border-radius:2px;padding:11px 26px;font-family:${FB};font-size:13px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;transition:background .3s ease}
     .ed:hover{background:${C.brick}} .ed:disabled{opacity:.55;cursor:default}
     .chip{font-family:${FM};font-size:12px;color:${C.body};background:${C.panel};border:1px solid ${C.rule};border-radius:2px;padding:6px 12px;transition:border-color .3s ease,color .3s ease,background .3s ease}
     .chip:hover{border-color:${C.ink};color:${C.ink};background:${C.tintM}}
@@ -319,20 +320,20 @@ export default function StudyGazette() {
     /* 글 카드 hover ③ — 떠오름 + 잉크 그림자 + 제목 색 */
     .hov{cursor:pointer;transition:transform .3s ease,box-shadow .3s ease}
     .hov .ttl{transition:color .3s ease}
-    .hov:hover{transform:translateY(-4px);box-shadow:6px 6px 0 ${C.ink}}
+    .hov:hover{transform:translateY(-4px);box-shadow:0 10px 24px rgba(44,49,58,.12)}
     .hov:hover .ttl{color:${C.brick} !important}
 
     /* 프로젝트 카드 hover ③ — 떠오름 + 잉크 그림자 + 화살표 */
     .proj{cursor:pointer;transition:transform .3s ease,box-shadow .3s ease}
-    .proj:hover{transform:translateY(-4px);box-shadow:6px 6px 0 ${C.ink}}
+    .proj:hover{transform:translateY(-4px);box-shadow:0 12px 28px rgba(44,49,58,.13)}
     .proj .proj-go{font-family:${FM};font-size:12px;color:${C.mustard};opacity:0;transform:translateX(-6px);transition:opacity .3s ease,transform .3s ease}
     .proj:hover .proj-go{opacity:1;transform:translateX(0)}
-    .proj-thumb{position:relative;overflow:hidden;border-right:1px solid ${C.ink};min-height:220px}
+    .proj-thumb{position:relative;overflow:hidden;border-right:1px solid ${C.frame};min-height:220px}
     .proj-thumb svg{width:100%;height:100%;display:block}
     .proj-link{font-family:${FM};font-size:12px;letter-spacing:.04em;color:${C.brick};border-bottom:1.5px solid ${C.brick};padding-bottom:1px;text-decoration:none;transition:color .3s ease,border-color .3s ease}
     .proj-link:hover{color:${C.ink};border-color:${C.ink}}
     .proj-link.off{color:${C.mute};border-color:${C.rule};cursor:default}
-    @media(max-width:760px){.proj{grid-template-columns:1fr !important}.proj-thumb{border-right:none !important;border-bottom:1px solid ${C.ink};min-height:160px}}
+    @media(max-width:760px){.proj{grid-template-columns:1fr !important}.proj-thumb{border-right:none !important;border-bottom:1px solid ${C.frame};min-height:160px}}
 
     /* Read more / Categories / nav 부드러운 색 전환 */
     .readmore{transition:color .3s ease,border-color .3s ease}
@@ -345,14 +346,14 @@ export default function StudyGazette() {
 
     /* 검색 자동완성 드롭다운 */
     .ac-wrap{position:relative}
-    .ac-list{position:absolute;left:0;right:0;top:calc(100% + 4px);background:${C.panel};border:1.5px solid ${C.ink};border-radius:2px;z-index:40;max-height:240px;overflow-y:auto}
+    .ac-list{position:absolute;left:0;right:0;top:calc(100% + 4px);background:${C.panel};border:1.5px solid ${C.frame};border-radius:2px;z-index:40;max-height:240px;overflow-y:auto;box-shadow:0 8px 22px rgba(44,49,58,.10)}
     .ac-item{display:flex;align-items:center;gap:8px;width:100%;text-align:left;background:none;border:none;border-bottom:1px solid ${C.rule};padding:9px 14px;font-family:${FM};font-size:13px;color:${C.body};cursor:pointer;transition:background .2s ease}
     .ac-item:last-child{border-bottom:none}
     .ac-item:hover,.ac-item.act{background:${C.tintM};color:${C.ink}}
     .ac-hash{color:${C.mustard};font-weight:600}
 
     /* 이전/다음 글 카드 — hover ② 좌측 머스터드 바 */
-    .pn-card{position:relative;display:flex;flex-direction:column;border:1px solid ${C.ink};background:${C.panel};cursor:pointer;overflow:hidden}
+    .pn-card{position:relative;display:flex;flex-direction:column;border:1px solid ${C.frame};background:${C.panel};cursor:pointer;overflow:hidden}
     .pn-card .pn-bar{position:absolute;left:0;top:0;bottom:0;width:0;background:${C.mustard};z-index:3;transition:width .3s ease}
     .pn-card .pn-body{transition:padding-left .3s ease}
     .pn-card .ttl{transition:color .3s ease}
@@ -365,6 +366,10 @@ export default function StudyGazette() {
     .ai-btn:hover{background:${C.brick} !important}
     .gz-input{border:none;background:transparent;outline:none;color:${C.ink};font-family:${FM};letter-spacing:.04em;width:100%}
     .gz-input::placeholder{color:${C.mute}}
+    /* 검색바 포커스 — 바탕 밝아짐 + 슬레이트 링 (쓰는 중 인지) */
+    .searchbar{transition:background .25s ease,border-color .25s ease,box-shadow .25s ease}
+    .searchbar:focus-within{background:#FCFBF8 !important;border-color:${C.accentD} !important;box-shadow:0 0 0 3px rgba(95,116,128,.16)}
+    .searchbar:focus-within .ai-btn{background:${C.accentD} !important}
     .blink{animation:bk 1s steps(2,start) infinite} @keyframes bk{to{opacity:.2}}
     @media(max-width:820px){.grid2{grid-template-columns:1fr !important}.hide-sm{display:none !important}.masthead h1{font-size:2.6rem !important}}
   `;
@@ -387,8 +392,8 @@ export default function StudyGazette() {
 
   /* 가로형 목록 아이템 (Front Page / 카테고리 / 검색 결과) */
   const ListItem = ({ p }) => (
-    <article className="hov" style={{ display: "grid", gridTemplateColumns: "150px 1fr", gap: "1.5rem", padding: "1.4rem", marginBottom: "1.1rem", border: `1px solid ${C.ink}`, background: C.panel }} onClick={() => open(p.id)}>
-      <div style={{ height: 120, border: `1px solid ${C.ink}`, overflow: "hidden" }}><Art seed={p.id + p.title} /></div>
+    <article className="hov" style={{ display: "grid", gridTemplateColumns: "150px 1fr", gap: "1.5rem", padding: "1.4rem", marginBottom: "1.1rem", border: `1px solid ${C.frame}`, background: C.panel }} onClick={() => open(p.id)}>
+      <div style={{ height: 120, border: `1px solid ${C.frame}`, overflow: "hidden" }}><Art seed={p.id + p.title} /></div>
       <div>
         <div className="kicker" style={{ marginBottom: 8 }}>{p.category} · {fmt(p.updated)}</div>
         <h3 className="ttl" style={{ fontFamily: FD, fontWeight: 700, fontSize: "1.34rem", color: C.ink, lineHeight: 1.2, margin: "0 0 .5rem" }}>{p.title}</h3>
@@ -400,8 +405,8 @@ export default function StudyGazette() {
 
   /* 세로형 카드 (AI 사서 추천 결과) */
   const ResultCard = ({ p }) => (
-    <div className="hov" onClick={() => open(p.id)} style={{ background: C.panel, border: `1px solid ${C.ink}`, borderRadius: 2, overflow: "hidden", cursor: "pointer", display: "flex", flexDirection: "column" }}>
-      <div style={{ height: 96, borderBottom: `1px solid ${C.ink}`, overflow: "hidden" }}><Art seed={p.id + p.title} /></div>
+    <div className="hov" onClick={() => open(p.id)} style={{ background: C.panel, border: `1px solid ${C.frame}`, borderRadius: 2, overflow: "hidden", cursor: "pointer", display: "flex", flexDirection: "column" }}>
+      <div style={{ height: 96, borderBottom: `1px solid ${C.frame}`, overflow: "hidden" }}><Art seed={p.id + p.title} /></div>
       <div style={{ padding: "10px 13px 13px" }}>
         <div className="kicker" style={{ marginBottom: 6, fontSize: 10 }}>{p.category}</div>
         <h3 className="ttl" style={{ fontFamily: FD, fontWeight: 700, fontSize: "1.08rem", color: C.ink, lineHeight: 1.25, margin: "0 0 .4rem" }}>{p.title}</h3>
@@ -423,7 +428,7 @@ export default function StudyGazette() {
 
         {route.name === "home" && (
         <div className="ac-wrap" style={{ maxWidth: 600, margin: "1.5rem auto 0", textAlign: "left" }}>
-          <div style={{ display: "flex", alignItems: "stretch", gap: 0, background: C.panel, border: `1.5px solid ${C.mustard}`, borderRadius: 2, overflow: "hidden" }}>
+          <div className="searchbar" style={{ display: "flex", alignItems: "stretch", gap: 0, background: C.panel, border: `1.5px solid ${C.mustard}`, borderRadius: 2, overflow: "hidden" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10, flex: 1, padding: "0 16px" }}>
               <Magnifier size={15} color={C.mustard} sw={1.5} />
               <input id="gz-main-search" className="gz-input" value={chatInput}
@@ -474,10 +479,10 @@ export default function StudyGazette() {
         {route.name === "home" && (<>
           {featured && (
             <section style={{ padding: "2.4rem 0 2rem" }}>
-              <div className="hov" style={{ border: `1px solid ${C.ink}`, background: C.panel }} onClick={() => open(featured.id)}>
-                <div style={{ height: 300, borderBottom: `1px solid ${C.ink}`, overflow: "hidden", position: "relative" }}>
+              <div className="hov" style={{ border: `1px solid ${C.frame}`, background: C.panel }} onClick={() => open(featured.id)}>
+                <div style={{ height: 300, borderBottom: `1px solid ${C.frame}`, overflow: "hidden", position: "relative" }}>
                   <Art seed={featured.id + "feat"} />
-                  <div style={{ position: "absolute", top: 14, left: 14, background: C.bg, border: `1.5px solid ${C.ink}`, padding: "3px 12px" }} className="eyebrow">Featured Study</div>
+                  <div style={{ position: "absolute", top: 14, left: 14, background: C.bg, border: `1.5px solid ${C.frame}`, padding: "3px 12px" }} className="eyebrow">Featured Study</div>
                 </div>
                 <div style={{ padding: "1.5rem 1.8rem 1.8rem" }}>
                   <div className="kicker" style={{ marginBottom: 10 }}>{featured.category} · {fmt(featured.updated)} · {readMin(featured.body)}</div>
@@ -502,7 +507,7 @@ export default function StudyGazette() {
             <aside className="hide-sm">
               <div id="about" style={{ marginBottom: "2.4rem" }}>
                 <div className="eyebrow dbl-bot" style={{ paddingBottom: ".5rem", marginBottom: "1rem" }}>About the Editor</div>
-                <div style={{ aspectRatio: "1 / 1", border: `1px solid ${C.ink}`, overflow: "hidden", marginBottom: "1rem" }}><img src="/profile.jpg" alt="최사랑" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 30%" }} /></div>
+                <div style={{ width: 120, aspectRatio: "1 / 1", border: `1px solid ${C.frame}`, overflow: "hidden", marginBottom: "1rem", filter: "grayscale(.12)" }}><img src="/profile.jpg" alt="최사랑" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 30%" }} /></div>
                 <p style={{ fontSize: ".93rem", lineHeight: 1.8, color: C.body, margin: 0 }}>
                   MLOps와 머신러닝 시스템을 공부하고 기록합니다. 읽은 논문, 만든 파이프라인, 정리한 개념을 한데 모은 작업실. 포트폴리오이자 공부 노트.
                 </p>
@@ -531,9 +536,7 @@ export default function StudyGazette() {
             <h1 style={{ fontFamily: FD, fontWeight: 900, fontSize: "clamp(2rem,5vw,2.9rem)", color: C.ink, lineHeight: 1.1, margin: "0 0 .6rem" }}>최사랑</h1>
             <p style={{ fontFamily: FD, fontStyle: "italic", fontSize: "1.1rem", color: C.brick, margin: "0 0 1.8rem" }}>Editor · MLOps &amp; ML Systems</p>
 
-            <div className="dbl-top dbl-bot" style={{ width: "min(340px, 80%)", aspectRatio: "3 / 4", margin: "0 auto 2.2rem", overflow: "hidden" }}>
-              <img src="/profile.jpg" alt="최사랑" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 30%" }} />
-            </div>
+            <div className="dbl-top" style={{ marginBottom: "2.2rem" }} />
 
             <div style={{ fontSize: "1.05rem" }}>
               <p className="g-p" style={{ fontFamily: FD, fontStyle: "italic", fontSize: "1.2rem", color: C.ink, lineHeight: 1.6 }}>
@@ -571,7 +574,7 @@ export default function StudyGazette() {
             </div>
 
             {/* 입력창 */}
-            <div style={{ display: "flex", alignItems: "center", gap: 0, background: C.panel, border: `1.5px solid ${C.mustard}`, borderRadius: 2, marginBottom: "1.1rem", overflow: "hidden" }}>
+            <div className="searchbar" style={{ display: "flex", alignItems: "center", gap: 0, background: C.panel, border: `1.5px solid ${C.mustard}`, borderRadius: 2, marginBottom: "1.1rem", overflow: "hidden" }}>
               <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 9, padding: "11px 14px" }}>
                 <Magnifier size={15} color={C.mustard} sw={1.5} />
                 <input className="gz-input" value={chatInput} onChange={(e) => setChatInput(e.target.value)}
@@ -650,10 +653,10 @@ export default function StudyGazette() {
 
             <div style={{ display: "flex", flexDirection: "column", gap: "2rem" }}>
               {PROJECTS.map((pr, i) => (
-                <article key={pr.id} className="proj" onClick={() => openProject(pr.id)} style={{ border: `1px solid ${C.ink}`, background: C.panel, display: "grid", gridTemplateColumns: "300px 1fr" }}>
+                <article key={pr.id} className="proj" onClick={() => openProject(pr.id)} style={{ border: `1px solid ${C.frame}`, background: C.panel, display: "grid", gridTemplateColumns: "300px 1fr" }}>
                   <div className="proj-thumb">
                     <Art seed={pr.id + pr.title} />
-                    <div className="kicker" style={{ position: "absolute", top: 12, left: 12, background: C.bg, border: `1.5px solid ${C.ink}`, padding: "3px 11px" }}>No. {String(i + 1).padStart(2, "0")}</div>
+                    <div className="kicker" style={{ position: "absolute", top: 12, left: 12, background: C.bg, border: `1.5px solid ${C.frame}`, padding: "3px 11px" }}>No. {String(i + 1).padStart(2, "0")}</div>
                   </div>
                   <div style={{ padding: "1.6rem 1.8rem" }}>
                     <div className="kicker" style={{ marginBottom: 8 }}>{pr.kind}</div>
@@ -736,7 +739,7 @@ export default function StudyGazette() {
                       <div key={p.id} className="pn-card" onClick={() => open(p.id)}>
                         <span className="pn-bar" />
                         <div className="pn-body">
-                          <div style={{ height: 120, borderBottom: `1px solid ${C.ink}`, overflow: "hidden" }}><Art seed={p.id + p.title} /></div>
+                          <div style={{ height: 120, borderBottom: `1px solid ${C.frame}`, overflow: "hidden" }}><Art seed={p.id + p.title} /></div>
                           <div style={{ padding: "11px 13px 13px" }}>
                             <div className="kicker" style={{ marginBottom: 6, fontSize: 10, color: C.brick }}>{dir}</div>
                             <h3 className="ttl" style={{ fontFamily: FD, fontWeight: 700, fontSize: "1.04rem", color: C.ink, lineHeight: 1.25, margin: 0 }}>{p.title}</h3>
