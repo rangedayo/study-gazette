@@ -302,7 +302,7 @@ export default function StudyGazette() {
     .dbl-top{border-top:3px double ${C.ink}} .dbl-bot{border-bottom:3px double ${C.ink}}
     .g-h2{font-family:${FD};font-weight:700;font-size:1.5rem;color:${C.ink};margin:1.9rem 0 .6rem;line-height:1.25}
     .g-h3{font-family:${FD};font-weight:700;font-size:1.2rem;color:${C.ink};margin:1.4rem 0 .4rem}
-    .g-p{margin:.7rem 0;line-height:1.85;font-size:1.04rem;color:${C.body}}
+    .g-p{margin:.7rem 0;line-height:1.85;font-size:.97rem;color:${C.body}}
     .g-ul{margin:.6rem 0 1rem;padding:0;list-style:none}
     .g-ul li{position:relative;padding-left:1.3rem;margin:.4rem 0;line-height:1.7}
     .g-ul li:before{content:"§";position:absolute;left:0;color:${C.mustard};font-weight:700}
@@ -396,7 +396,7 @@ export default function StudyGazette() {
       <div>
         <div className="kicker" style={{ marginBottom: 8 }}>{p.category} · {fmt(p.updated)}</div>
         <h3 className="ttl" style={{ fontFamily: FD, fontWeight: 700, fontSize: "1.34rem", color: C.ink, lineHeight: 1.2, margin: "0 0 .5rem" }}>{p.title}</h3>
-        <p style={{ margin: 0, color: C.body, fontSize: ".96rem", lineHeight: 1.7, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{clean(p.body).slice(0, 150)}</p>
+        <p style={{ margin: 0, color: C.body, fontSize: ".9rem", lineHeight: 1.7, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{clean(p.body).slice(0, 150)}</p>
         <div style={{ marginTop: ".7rem" }}>{(p.tags || []).slice(0, 3).map((t) => <span key={t} style={{ fontFamily: FM, fontSize: 11, color: C.mute, marginRight: 12 }}>#{t}</span>)}</div>
       </div>
     </article>
@@ -436,7 +436,7 @@ export default function StudyGazette() {
                 onFocus={() => setAcOpen(true)}
                 onBlur={() => setTimeout(() => setAcOpen(false), 150)}
                 placeholder="키워드, 또는 '파이썬 공부 기록 보여줘' 처럼 질문하세요"
-                style={{ fontSize: 13, padding: "12px 0" }} />
+                style={{ fontSize: 12, padding: "12px 0" }} />
             </div>
             <button onClick={() => submitFromMain()} className="ai-btn"
               style={{ background: C.mustard, border: "none", color: C.bg, fontFamily: FM, fontSize: 13, letterSpacing: ".06em", padding: "0 20px", cursor: "pointer", fontWeight: 600, whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: 6 }}>
@@ -476,7 +476,7 @@ export default function StudyGazette() {
 
         {/* ── 프론트 페이지 ── */}
         {route.name === "home" && (<>
-          <section className="grid2" style={{ display: "grid", gridTemplateColumns: "1fr 240px", gap: "3rem", padding: "2.4rem 0 4rem", alignItems: "start" }}>
+          <section className="grid2" style={{ display: "grid", gridTemplateColumns: "1fr 225px", gap: "3rem", padding: "2.4rem 0 4rem", alignItems: "start" }}>
             <div id="writing">
               {featured && (
                 <div className="hov" style={{ border: `1px solid ${C.frame}`, background: C.panel, marginBottom: "2.2rem" }} onClick={() => open(featured.id)}>
@@ -487,7 +487,7 @@ export default function StudyGazette() {
                   <div style={{ padding: "1.5rem 1.8rem 1.8rem" }}>
                     <div className="kicker" style={{ marginBottom: 10 }}>{featured.category} · {fmt(featured.updated)} · {readMin(featured.body)}</div>
                     <h2 className="ttl" style={{ fontFamily: FD, fontWeight: 900, fontSize: "1.9rem", color: C.ink, margin: "0 0 .6rem", lineHeight: 1.12 }}>{featured.title}</h2>
-                    <p style={{ margin: 0, color: C.body, lineHeight: 1.8, fontSize: "1.04rem" }}>{clean(featured.body).slice(0, 190)}…</p>
+                    <p style={{ margin: 0, color: C.body, lineHeight: 1.8, fontSize: ".97rem" }}>{clean(featured.body).slice(0, 190)}…</p>
                     <button className="ed" style={{ marginTop: "1.3rem" }}>Read the issue</button>
                   </div>
                 </div>
@@ -504,7 +504,7 @@ export default function StudyGazette() {
               <div id="about" style={{ marginBottom: "2.4rem" }}>
                 <div className="eyebrow dbl-bot" style={{ paddingBottom: ".5rem", marginBottom: "1rem" }}>About the Editor</div>
                 <div style={{ aspectRatio: "1 / 1", border: `1px solid ${C.frame}`, overflow: "hidden", marginBottom: "1rem", filter: "grayscale(.12)" }}><img src="/profile.jpg" alt="최사랑" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 30%" }} /></div>
-                <p style={{ fontSize: ".93rem", lineHeight: 1.8, color: C.body, margin: 0 }}>
+                <p style={{ fontSize: ".87rem", lineHeight: 1.8, color: C.body, margin: 0 }}>
                   MLOps와 머신러닝 시스템을 공부하고 기록합니다. 읽은 논문, 만든 파이프라인, 정리한 개념을 한데 모은 작업실. 포트폴리오이자 공부 노트.
                 </p>
                 <button onClick={() => goto("about")} className="readmore" style={{ marginTop: "1rem", background: "none", border: "none", padding: 0, fontFamily: FB, fontSize: 12, letterSpacing: ".1em", color: C.brick, textTransform: "uppercase", fontWeight: 600, borderBottom: `1.5px solid ${C.brick}`, cursor: "pointer" }}>Read more →</button>
@@ -575,7 +575,7 @@ export default function StudyGazette() {
                 <Magnifier size={15} color={C.mustard} sw={1.5} />
                 <input className="gz-input" value={chatInput} onChange={(e) => setChatInput(e.target.value)}
                   onKeyDown={(e) => { if (e.key === "Enter") runAISearch(); }}
-                  placeholder="찾고 싶은 내용을 문장이나 키워드로…" style={{ fontSize: 14 }} />
+                  placeholder="찾고 싶은 내용을 문장이나 키워드로…" style={{ fontSize: 13 }} />
               </div>
               <button onClick={() => runAISearch()} disabled={chatLoading} className={chatLoading ? "" : "ai-btn"}
                 style={{ background: chatLoading ? C.mute : C.mustard, border: "none", borderLeft: `1.5px solid ${C.mustard}`, color: C.bg, fontFamily: FM, fontSize: 13, letterSpacing: ".08em", padding: "0 22px", minHeight: 50, cursor: chatLoading ? "default" : "pointer", fontWeight: 600, whiteSpace: "nowrap" }}>
