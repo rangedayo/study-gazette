@@ -477,25 +477,22 @@ export default function StudyGazette() {
 
         {/* ── 프론트 페이지 ── */}
         {route.name === "home" && (<>
-          {featured && (
-            <section style={{ padding: "2.4rem 0 2rem" }}>
-              <div className="hov" style={{ border: `1px solid ${C.frame}`, background: C.panel }} onClick={() => open(featured.id)}>
-                <div style={{ height: 300, borderBottom: `1px solid ${C.frame}`, overflow: "hidden", position: "relative" }}>
-                  <Art seed={featured.id + "feat"} />
-                  <div style={{ position: "absolute", top: 14, left: 14, background: C.bg, border: `1.5px solid ${C.frame}`, padding: "3px 12px" }} className="eyebrow">Featured Study</div>
-                </div>
-                <div style={{ padding: "1.5rem 1.8rem 1.8rem" }}>
-                  <div className="kicker" style={{ marginBottom: 10 }}>{featured.category} · {fmt(featured.updated)} · {readMin(featured.body)}</div>
-                  <h2 className="ttl" style={{ fontFamily: FD, fontWeight: 900, fontSize: "2rem", color: C.ink, margin: "0 0 .6rem", lineHeight: 1.12 }}>{featured.title}</h2>
-                  <p style={{ margin: 0, color: C.body, lineHeight: 1.8, fontSize: "1.04rem" }}>{clean(featured.body).slice(0, 190)}…</p>
-                  <button className="ed" style={{ marginTop: "1.3rem" }}>Read the issue</button>
-                </div>
-              </div>
-            </section>
-          )}
-
-          <section className="grid2" style={{ display: "grid", gridTemplateColumns: "1fr 280px", gap: "3rem", padding: "1rem 0 4rem" }}>
+          <section className="grid2" style={{ display: "grid", gridTemplateColumns: "1fr 280px", gap: "3rem", padding: "2.4rem 0 4rem", alignItems: "start" }}>
             <div id="writing">
+              {featured && (
+                <div className="hov" style={{ border: `1px solid ${C.frame}`, background: C.panel, marginBottom: "2.2rem" }} onClick={() => open(featured.id)}>
+                  <div style={{ height: 280, borderBottom: `1px solid ${C.frame}`, overflow: "hidden", position: "relative" }}>
+                    <Art seed={featured.id + "feat"} />
+                    <div style={{ position: "absolute", top: 14, left: 14, background: C.bg, border: `1.5px solid ${C.frame}`, padding: "3px 12px" }} className="eyebrow">Featured Study</div>
+                  </div>
+                  <div style={{ padding: "1.5rem 1.8rem 1.8rem" }}>
+                    <div className="kicker" style={{ marginBottom: 10 }}>{featured.category} · {fmt(featured.updated)} · {readMin(featured.body)}</div>
+                    <h2 className="ttl" style={{ fontFamily: FD, fontWeight: 900, fontSize: "1.9rem", color: C.ink, margin: "0 0 .6rem", lineHeight: 1.12 }}>{featured.title}</h2>
+                    <p style={{ margin: 0, color: C.body, lineHeight: 1.8, fontSize: "1.04rem" }}>{clean(featured.body).slice(0, 190)}…</p>
+                    <button className="ed" style={{ marginTop: "1.3rem" }}>Read the issue</button>
+                  </div>
+                </div>
+              )}
               <div className="dbl-bot" style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", paddingBottom: ".6rem", marginBottom: ".4rem" }}>
                 <span className="eyebrow">Latest Issues</span>
                 <button onClick={() => goto("archive")} style={{ background: "none", border: "none", fontFamily: FM, fontSize: 11, letterSpacing: ".06em", color: C.brick, textTransform: "uppercase" }}>Ask the Archive →</button>
@@ -507,7 +504,7 @@ export default function StudyGazette() {
             <aside className="hide-sm">
               <div id="about" style={{ marginBottom: "2.4rem" }}>
                 <div className="eyebrow dbl-bot" style={{ paddingBottom: ".5rem", marginBottom: "1rem" }}>About the Editor</div>
-                <div style={{ width: 120, aspectRatio: "1 / 1", border: `1px solid ${C.frame}`, overflow: "hidden", marginBottom: "1rem", filter: "grayscale(.12)" }}><img src="/profile.jpg" alt="최사랑" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 30%" }} /></div>
+                <div style={{ width: 84, aspectRatio: "1 / 1", border: `1px solid ${C.frame}`, overflow: "hidden", marginBottom: "1rem", filter: "grayscale(.12)" }}><img src="/profile.jpg" alt="최사랑" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 30%" }} /></div>
                 <p style={{ fontSize: ".93rem", lineHeight: 1.8, color: C.body, margin: 0 }}>
                   MLOps와 머신러닝 시스템을 공부하고 기록합니다. 읽은 논문, 만든 파이프라인, 정리한 개념을 한데 모은 작업실. 포트폴리오이자 공부 노트.
                 </p>
