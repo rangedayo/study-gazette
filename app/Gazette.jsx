@@ -363,13 +363,12 @@ export default function StudyGazette() {
 
     .search-cta:hover{background:${C.tintM}}
     .ai-btn{transition:background .3s ease}
-    .ai-btn:hover{background:${C.brick} !important}
+    .ai-btn:hover{background:${C.ink} !important}
     .gz-input{border:none;background:transparent;outline:none;color:${C.ink};font-family:${FM};letter-spacing:.04em;width:100%}
     .gz-input::placeholder{color:${C.mute}}
     /* 검색바 포커스 — 바탕 밝아짐 + 슬레이트 링 (쓰는 중 인지) */
     .searchbar{transition:background .25s ease,border-color .25s ease,box-shadow .25s ease}
     .searchbar:focus-within{background:#FCFBF8 !important;border-color:${C.accentD} !important;box-shadow:0 0 0 3px rgba(95,116,128,.16)}
-    .searchbar:focus-within .ai-btn{background:${C.accentD} !important}
     .blink{animation:bk 1s steps(2,start) infinite} @keyframes bk{to{opacity:.2}}
     @media(max-width:820px){.grid2{grid-template-columns:1fr !important}.hide-sm{display:none !important}.masthead h1{font-size:2.6rem !important}}
   `;
@@ -504,7 +503,7 @@ export default function StudyGazette() {
             <aside className="hide-sm">
               <div id="about" style={{ marginBottom: "2.4rem" }}>
                 <div className="eyebrow dbl-bot" style={{ paddingBottom: ".5rem", marginBottom: "1rem" }}>About the Editor</div>
-                <div style={{ width: 84, aspectRatio: "1 / 1", border: `1px solid ${C.frame}`, overflow: "hidden", marginBottom: "1rem", filter: "grayscale(.12)" }}><img src="/profile.jpg" alt="최사랑" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 30%" }} /></div>
+                <div style={{ aspectRatio: "1 / 1", border: `1px solid ${C.frame}`, overflow: "hidden", marginBottom: "1rem", filter: "grayscale(.12)" }}><img src="/profile.jpg" alt="최사랑" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 30%" }} /></div>
                 <p style={{ fontSize: ".93rem", lineHeight: 1.8, color: C.body, margin: 0 }}>
                   MLOps와 머신러닝 시스템을 공부하고 기록합니다. 읽은 논문, 만든 파이프라인, 정리한 개념을 한데 모은 작업실. 포트폴리오이자 공부 노트.
                 </p>
