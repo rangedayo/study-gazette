@@ -46,23 +46,24 @@ const PROJECTS = [
     id: "p1", title: "식물진단 AI 서비스", kind: "AI 서비스 · 풀스택",
     summary: "식물 사진을 올리면 1차 진단을 내리고, 객관식 후속 질문으로 보정한 2차 진단까지 제공하는 진단 서비스. Gemini 비전 모델과 RAG를 결합했다.",
     highlights: [
-      "사진 → Gemini + RAG 1차 진단 → 객관식 질문 → 2차 보정 진단(챗봇형)",
-      "ChromaDB 벡터 RAG · RAGAS로 검색 품질 평가",
-      "관엽식물 도메인 특화를 위해 PaliGemma fine-tuning 검토 중",
+      "치명적 오진(아픈 식물을 건강으로)을 0건으로 사수하면서, 오탐(건강을 아픔으로)을 17.5 → 7.5로 절반 감축",
+      "사진 → Gemini Vision 분석 → ChromaDB RAG 검색 → 생성(gpt-4o-mini) → status 보정 가드 → 객관식 2차 보정 진단",
+      "프롬프트로 환각(없는 병 지어내기) 억제를 4회 시도해 모두 효과 0임을 측정으로 확인 → 출력 단계 후처리 가드로 우회 (라운드 기반 변수격리 평가)",
+      "검색 품질을 자체 골든셋으로 평가 (Hit@10 = 1.0 / MRR = 0.9)",
     ],
-    stack: ["Gemini Vision", "RAG", "ChromaDB", "FastAPI", "Next.js", "Firebase"],
-    links: [{ label: "GitHub", url: "" }],
+    stack: ["Gemini Vision", "ChromaDB RAG", "gpt-4o-mini", "FastAPI", "Next.js", "Firebase"],
+    links: [{ label: "GitHub", url: "https://github.com/rangedayo/plant-diagnosis" }],
   },
   {
-    id: "p2", title: "제주 태양광 발전량 예측 + ESS 운영 시뮬레이션", kind: "시계열 ML · 데이터 분석",
-    summary: "제주 태양광 발전량을 예측해 ESS 충방전 운영효율을 개선하는 모델 비교 프로젝트. Naive · XGBoost · LSTM을 같은 파이프라인에서 평가했다.",
+    id: "p2", title: "전국 17개 시도 태양광 발전량 예측 + ESS 운영 시뮬레이션", kind: "시계열 ML · 데이터 분석",
+    summary: "전국 17개 시도의 태양광 발전량을 예측해 ESS 충·방전 운영 가치를 분석한 프로젝트. Naive · XGBoost · LSTM · AutoGluon을 같은 파이프라인에서 평가하고, MPC(LP 최적화) 운영까지 도입했다.",
     highlights: [
-      "XGBoost로 Naive 대비 MAE 33.5%↓ (18.68 → 12.43 MWh)",
-      "LSTM이 ESS 운영효율 최고점(31.4)·전력부족 횟수 최소",
-      "‘발전효율’ 피처의 데이터 누수를 발견하고 원인을 규명",
+      "XGBoost로 Naive 대비 MAE 55.8%↓ (21.74 → 9.61 MWh) — LSTM(17.82)·트랜스포머 앙상블 대비 우위",
+      "모델 정확도의 한계효용 ≈ 0 — 완벽 예측(oracle)과 XGBoost의 운영 수익 차이 0.08%. 시스템 구조(MPC)가 결과를 결정함을 17지역×6정책으로 실증",
+      "LSTM이 ESS 지표에서 좋아 보인 원인을 추적해 시뮬레이터 비대칭 분기 버그로 규명 (정확도 메트릭 ≠ 운영 성과)",
     ],
-    stack: ["XGBoost", "LSTM", "ARIMA", "scikit-learn", "FastAPI"],
-    links: [{ label: "GitHub", url: "" }],
+    stack: ["XGBoost", "LSTM", "AutoGluon", "scipy LP (MPC)", "FastAPI", "Streamlit"],
+    links: [{ label: "GitHub", url: "https://github.com/rangedayo/energy-time-series-forecast" }],
   },
   {
     id: "p3", title: "심울림 — 발달장애인 감정·상태 전달 인터페이스", kind: "창업경진대회 · 팀 프로젝트",
@@ -466,7 +467,7 @@ export default function StudyGazette() {
           <article style={{ maxWidth: 720, margin: "0 auto", padding: "2.8rem 0 4rem" }}>
             <button onClick={goHome} className="eyebrow" style={{ background: "none", border: "none", padding: 0, marginBottom: "1.8rem" }}>← Back to front page</button>
             <div className="eyebrow" style={{ marginBottom: "1rem" }}>About the Editor</div>
-            <h1 style={{ fontFamily: FD, fontWeight: 900, fontSize: "clamp(2rem,5vw,2.9rem)", color: C.ink, lineHeight: 1.1, margin: "0 0 .6rem" }}>[ 편집자 이름 ]</h1>
+            <h1 style={{ fontFamily: FD, fontWeight: 900, fontSize: "clamp(2rem,5vw,2.9rem)", color: C.ink, lineHeight: 1.1, margin: "0 0 .6rem" }}>최사랑</h1>
             <p style={{ fontFamily: FD, fontStyle: "italic", fontSize: "1.1rem", color: C.brick, margin: "0 0 1.8rem" }}>Editor · MLOps &amp; ML Systems</p>
 
             <div className="dbl-top dbl-bot" style={{ height: 280, margin: "0 0 2.2rem", overflow: "hidden", position: "relative", background: C.tintM, display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -491,16 +492,11 @@ export default function StudyGazette() {
               </ul>
 
               <h2 className="g-h2">약력</h2>
-              <p className="g-p">[ 학력 · 경력 · 현재 하는 일을 적어주세요. 예: ○○대학교 ○○ 전공, 현재 ○○에서 ML 엔지니어로 일하고 있습니다. ]</p>
+              <p className="g-p">비개발자로 출발해 AI 엔지니어링을 공부하며 AI 엔지니어 신입으로의 전향을 준비하고 있습니다. 식물 진단 AI 서비스와 태양광 발전량 예측·ESS 운영 시뮬레이션 등 세 개의 프로젝트를 직접 설계·구현했고, 화려한 모델보다 평가셋과 측정으로 AI 시스템의 동작을 끝까지 통제하는 방식으로 일합니다.</p>
 
               <h2 className="g-h2">연락</h2>
-              <p className="g-p">[ 이메일 · GitHub · LinkedIn 등 연락처를 적어주세요. ]</p>
+              <p className="g-p">이메일 <a href="mailto:rangedayo@naver.com" style={{ color: C.brick }}>rangedayo@naver.com</a> · GitHub <a href="https://github.com/rangedayo" target="_blank" rel="noreferrer" style={{ color: C.brick }}>github.com/rangedayo</a></p>
 
-              <div style={{ marginTop: "2.4rem", padding: "1rem 1.2rem", border: `1px dashed ${C.mute}`, background: C.panel, borderRadius: 2 }}>
-                <p style={{ margin: 0, fontFamily: FM, fontSize: ".82rem", color: C.mute, lineHeight: 1.7 }}>
-                  ✎ 이 페이지는 임시 초안입니다. 대괄호 [ ] 부분과 사진을 직접 채워 넣으면 됩니다.
-                </p>
-              </div>
             </div>
           </article>
         )}
