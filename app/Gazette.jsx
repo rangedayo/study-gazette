@@ -441,7 +441,7 @@ export default function StudyGazette() {
             <aside className="hide-sm">
               <div id="about" style={{ marginBottom: "2.4rem" }}>
                 <div className="eyebrow dbl-bot" style={{ paddingBottom: ".5rem", marginBottom: "1rem" }}>About the Editor</div>
-                <div style={{ height: 150, border: `1px solid ${C.ink}`, overflow: "hidden", marginBottom: "1rem" }}><img src="/profile.jpg" alt="최사랑" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 30%" }} /></div>
+                <div style={{ aspectRatio: "1 / 1", border: `1px solid ${C.ink}`, overflow: "hidden", marginBottom: "1rem" }}><img src="/profile.jpg" alt="최사랑" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 30%" }} /></div>
                 <p style={{ fontSize: ".93rem", lineHeight: 1.8, color: C.body, margin: 0 }}>
                   MLOps와 머신러닝 시스템을 공부하고 기록합니다. 읽은 논문, 만든 파이프라인, 정리한 개념을 한데 모은 작업실. 포트폴리오이자 공부 노트.
                 </p>
@@ -470,7 +470,7 @@ export default function StudyGazette() {
             <h1 style={{ fontFamily: FD, fontWeight: 900, fontSize: "clamp(2rem,5vw,2.9rem)", color: C.ink, lineHeight: 1.1, margin: "0 0 .6rem" }}>최사랑</h1>
             <p style={{ fontFamily: FD, fontStyle: "italic", fontSize: "1.1rem", color: C.brick, margin: "0 0 1.8rem" }}>Editor · MLOps &amp; ML Systems</p>
 
-            <div className="dbl-top dbl-bot" style={{ height: 280, margin: "0 0 2.2rem", overflow: "hidden" }}>
+            <div className="dbl-top dbl-bot" style={{ width: "min(340px, 80%)", aspectRatio: "3 / 4", margin: "0 auto 2.2rem", overflow: "hidden" }}>
               <img src="/profile.jpg" alt="최사랑" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 30%" }} />
             </div>
 
