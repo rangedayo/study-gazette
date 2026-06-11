@@ -476,7 +476,7 @@ export default function StudyGazette() {
 
         {/* ── 프론트 페이지 ── */}
         {route.name === "home" && (<>
-          <section className="grid2" style={{ display: "grid", gridTemplateColumns: "1fr 280px", gap: "3rem", padding: "2.4rem 0 4rem", alignItems: "start" }}>
+          <section className="grid2" style={{ display: "grid", gridTemplateColumns: "1fr 240px", gap: "3rem", padding: "2.4rem 0 4rem", alignItems: "start" }}>
             <div id="writing">
               {featured && (
                 <div className="hov" style={{ border: `1px solid ${C.frame}`, background: C.panel, marginBottom: "2.2rem" }} onClick={() => open(featured.id)}>
