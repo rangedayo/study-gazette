@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import POSTS_DATA from "../data/posts.json";
 
 /* ════════════════════════════════════════════════════════════
@@ -212,6 +212,26 @@ export default function StudyGazette() {
     return () => window.removeEventListener("keydown", h);
   }, []);
 
+  /* 브라우저 뒤로/앞으로 가기 ↔ 화면(route) 상태 동기화 */
+  const skipPush = useRef(false);
+  const firstRoute = useRef(true);
+  useEffect(() => {
+    window.history.replaceState({ route }, "");
+    const onPop = (e) => {
+      skipPush.current = true;
+      setRoute(e.state?.route || { name: "home" });
+      window.scrollTo({ top: 0 });
+    };
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  useEffect(() => {
+    if (firstRoute.current) { firstRoute.current = false; return; }
+    if (skipPush.current) { skipPush.current = false; return; }
+    window.history.pushState({ route }, "");
+  }, [route]);
+
   const sorted = useMemo(() => [...(posts || [])].sort((a, b) => b.updated - a.updated), [posts]);
   const featured = useMemo(() => sorted.find((p) => p.pinned) || sorted[0], [sorted]);
   const rest = useMemo(() => sorted.filter((p) => p.id !== featured?.id), [sorted, featured]);
@@ -364,7 +384,7 @@ export default function StudyGazette() {
     .search-cta:hover{background:${C.tintM}}
     .ai-btn{transition:background .3s ease}
     .ai-btn:hover{background:${C.ink} !important}
-    .gz-input{border:none;background:transparent;outline:none;color:${C.ink};font-family:${FM};letter-spacing:.04em;width:100%}
+    .gz-input{border:none;background:transparent;outline:none;color:${C.ink};font-family:${FB};letter-spacing:.01em;width:100%}
     .gz-input::placeholder{color:${C.mute}}
     /* 검색바 포커스 — 바탕 밝아짐 + 슬레이트 링 (쓰는 중 인지) */
     .searchbar{transition:background .25s ease,border-color .25s ease,box-shadow .25s ease}
@@ -435,7 +455,7 @@ export default function StudyGazette() {
                 onKeyDown={onMainKeyDown}
                 onFocus={() => setAcOpen(true)}
                 onBlur={() => setTimeout(() => setAcOpen(false), 150)}
-                placeholder="키워드, 또는 '파이썬 공부 기록 보여줘' 처럼 질문하세요"
+                placeholder="키워드, 또는 '파이썬 공부 기록 보여줘' 처럼 질문해주세요"
                 style={{ fontSize: 12, padding: "12px 0" }} />
             </div>
             <button onClick={() => submitFromMain()} className="ai-btn"
@@ -497,7 +517,7 @@ export default function StudyGazette() {
                 <button onClick={() => goto("archive")} style={{ background: "none", border: "none", fontFamily: FM, fontSize: 11, letterSpacing: ".06em", color: C.brick, textTransform: "uppercase" }}>Ask the Archive →</button>
               </div>
               {rest.length === 0 ? <p style={{ color: C.mute, padding: "2rem 0" }}>아직 다른 글이 없습니다.</p>
-                : rest.map((p) => <ListItem key={p.id} p={p} />)}
+                : rest.slice(0, 2).map((p) => <ListItem key={p.id} p={p} />)}
             </div>
 
             <aside className="hide-sm">
@@ -767,3 +787,4 @@ export default function StudyGazette() {
     </div>
   );
 }
+// study gazette
