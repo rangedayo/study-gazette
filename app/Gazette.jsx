@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import POSTS_DATA from "../data/posts.json";
 
 /* ════════════════════════════════════════════════════════════
@@ -19,13 +19,54 @@ import POSTS_DATA from "../data/posts.json";
    ════════════════════════════════════════════════════════════ */
 
 const C = {
-  bg: "#EBE9E3", panel: "#F4F2EC", ink: "#2C313A", body: "#50545C", mute: "#928F86",
+  bg: "#F0EFEB", panel: "#FAF8F3", ink: "#2C313A", body: "#50545C", mute: "#928F86",
   rule: "#D5D1C8", mustard: "#5F7480", brick: "#9B7568", tintM: "#DEE3E3", tintB: "#E7DDD6",
   frame: "#C6C0B4", accentD: "#4C5E68",
 };
 const FD = "'Playfair Display', Georgia, serif";
 const FB = "'Inter', -apple-system, system-ui, sans-serif";
 const FM = "'DM Mono', ui-monospace, monospace";
+
+const GitHubMark = () => (
+  <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+    <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/>
+  </svg>
+);
+
+const ExternalMark = () => (
+  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M6 3H3.5A1.5 1.5 0 0 0 2 4.5v8A1.5 1.5 0 0 0 3.5 14h8a1.5 1.5 0 0 0 1.5-1.5V10"/>
+    <path d="M9.5 2.5H13.5V6.5"/><path d="M7 9 13.5 2.5"/>
+  </svg>
+);
+
+// 링크 label로 아이콘과 부제목을 고른다
+const linkMeta = (label) => {
+  if (/github/i.test(label)) return { Icon: GitHubMark, sub: "전체 코드와 파이프라인 보기" };
+  if (/live/i.test(label)) return { Icon: ExternalMark, sub: "라이브 데모 열기" };
+  if (/랜딩|landing/i.test(label)) return { Icon: ExternalMark, sub: "프로젝트 소개 페이지" };
+  return { Icon: ExternalMark, sub: "바로가기" };
+};
+
+/* 화면(route) ↔ URL 해시 인코딩. 해시는 브라우저가 정확히 복원하므로
+   App Router가 history.state를 덮어써도 뒤로/앞으로가 안전하게 동작한다. */
+const SECTIONS = ["about", "archive", "projects"];
+const encodeRoute = (r) => {
+  if (!r || r.name === "home") return "";
+  if (r.name === "cat") return "cat:" + encodeURIComponent(r.value);
+  if (r.name === "post") return "post:" + r.id;
+  if (r.name === "project") return "project:" + r.id;
+  return r.name;
+};
+const decodeRoute = (hash) => {
+  const s = (hash || "").replace(/^#/, "");
+  if (!s) return { name: "home" };
+  if (s.startsWith("cat:")) return { name: "cat", value: decodeURIComponent(s.slice(4)) };
+  if (s.startsWith("post:")) return { name: "post", id: s.slice(5) };
+  if (s.startsWith("project:")) return { name: "project", id: s.slice(8) };
+  if (SECTIONS.includes(s)) return { name: s };
+  return { name: "home" };
+};
 
 const DEMO = [
   { id: "d1", title: "PaLM-E: 로봇을 제어하는 멀티모달 지능", category: "AI 모델 이론", pinned: true,
@@ -212,25 +253,17 @@ export default function StudyGazette() {
     return () => window.removeEventListener("keydown", h);
   }, []);
 
-  /* 브라우저 뒤로/앞으로 가기 ↔ 화면(route) 상태 동기화 */
-  const skipPush = useRef(false);
-  const firstRoute = useRef(true);
+  /* 브라우저 뒤로/앞으로 가기 ↔ 화면(route) 상태 동기화 (URL 해시 기반) */
   useEffect(() => {
-    window.history.replaceState({ route }, "");
-    const onPop = (e) => {
-      skipPush.current = true;
-      setRoute(e.state?.route || { name: "home" });
-      window.scrollTo({ top: 0 });
+    const sync = () => { setRoute(decodeRoute(window.location.hash)); window.scrollTo({ top: 0 }); };
+    sync(); // 새로고침/직접진입 시 해시로부터 화면 복원
+    window.addEventListener("popstate", sync);
+    window.addEventListener("hashchange", sync);
+    return () => {
+      window.removeEventListener("popstate", sync);
+      window.removeEventListener("hashchange", sync);
     };
-    window.addEventListener("popstate", onPop);
-    return () => window.removeEventListener("popstate", onPop);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-  useEffect(() => {
-    if (firstRoute.current) { firstRoute.current = false; return; }
-    if (skipPush.current) { skipPush.current = false; return; }
-    window.history.pushState({ route }, "");
-  }, [route]);
 
   const sorted = useMemo(() => [...(posts || [])].sort((a, b) => b.updated - a.updated), [posts]);
   const featured = useMemo(() => sorted.find((p) => p.pinned) || sorted[0], [sorted]);
@@ -253,10 +286,21 @@ export default function StudyGazette() {
     return allTags.filter(({ tag }) => tag.toLowerCase().includes(q)).slice(0, 6);
   }, [chatInput, allTags]);
 
-  const open = useCallback((id) => { setRoute({ name: "post", id }); window.scrollTo({ top: 0 }); }, []);
-  const openProject = useCallback((id) => { setRoute({ name: "project", id }); window.scrollTo({ top: 0 }); }, []);
-  const goHome = () => { setRoute({ name: "home" }); window.scrollTo({ top: 0 }); };
-  const goto = (name) => { setRoute({ name }); window.scrollTo({ top: 0 }); };
+  /* 모든 화면 전환은 goTo를 거쳐 URL 해시에 기록 → 브라우저 뒤로가기가 정확히 복원 */
+  const goTo = useCallback((r) => {
+    const h = encodeRoute(r);
+    const url = window.location.pathname + window.location.search + (h ? "#" + h : "");
+    window.history.pushState(null, "", url);
+    setRoute(r);
+    window.scrollTo({ top: 0 });
+  }, []);
+  const open = useCallback((id) => goTo({ name: "post", id }), [goTo]);
+  const openProject = useCallback((id) => goTo({ name: "project", id }), [goTo]);
+  const goHome = () => goTo({ name: "home" });
+  const goto = (name) => goTo({ name });
+  /* 인페이지 뒤로가기 = 브라우저 뒤로가기와 동일하게 직전 화면으로 */
+  const goBack = () => { if (window.history.length > 1) window.history.back(); else goTo({ name: "home" }); };
+  const backLabel = "← Back";
   const cur = (posts || []).find((p) => p.id === route.id);
   const curProj = PROJECTS.find((p) => p.id === route.id);
   const catPosts = route.name === "cat" ? sorted.filter((p) => p.category === route.value) : [];
@@ -295,7 +339,7 @@ export default function StudyGazette() {
     const question = (q ?? chatInput).trim();
     if (!question) return;
     setAcOpen(false); setAcIdx(-1);
-    setRoute({ name: "archive" }); window.scrollTo({ top: 0 });
+    goTo({ name: "archive" });
     setTimeout(() => runAISearch(question), 80);
   };
 
@@ -346,6 +390,8 @@ export default function StudyGazette() {
     /* 프로젝트 카드 hover ③ — 떠오름 + 잉크 그림자 + 화살표 */
     .proj{cursor:pointer;transition:transform .3s ease,box-shadow .3s ease}
     .proj:hover{transform:translateY(-4px);box-shadow:0 12px 28px rgba(44,49,58,.13)}
+    .proj h2{transition:color .3s ease}
+    .proj:hover h2{color:${C.brick} !important}
     .proj .proj-go{font-family:${FM};font-size:12px;color:${C.mustard};opacity:0;transform:translateX(-6px);transition:opacity .3s ease,transform .3s ease}
     .proj:hover .proj-go{opacity:1;transform:translateX(0)}
     .proj-thumb{position:relative;overflow:hidden;border-right:1px solid ${C.frame};min-height:220px}
@@ -353,6 +399,19 @@ export default function StudyGazette() {
     .proj-link{font-family:${FM};font-size:12px;letter-spacing:.04em;color:${C.brick};border-bottom:1.5px solid ${C.brick};padding-bottom:1px;text-decoration:none;transition:color .3s ease,border-color .3s ease}
     .proj-link:hover{color:${C.ink};border-color:${C.ink}}
     .proj-link.off{color:${C.mute};border-color:${C.rule};cursor:default}
+    .lnk-cta{display:flex;align-items:center;gap:14px;text-decoration:none;border:1.5px solid ${C.frame};background:${C.panel};border-radius:3px;padding:14px 18px;transition:border-color .25s ease,background .25s ease,box-shadow .25s ease}
+    .lnk-cta:hover{border-color:${C.accentD};background:#FCFBF8;box-shadow:0 4px 14px rgba(44,49,58,.08)}
+    .lnk-cta .ic{flex:none;width:38px;height:38px;border-radius:50%;background:${C.ink};color:${C.bg};display:flex;align-items:center;justify-content:center;transition:background .25s ease}
+    .lnk-cta:hover .ic{background:${C.accentD}}
+    .lnk-cta .ic svg{width:20px;height:20px;display:block}
+    .lnk-cta .tx{flex:1;min-width:0}
+    .lnk-cta .t1{font-family:${FB};font-weight:600;color:${C.ink};font-size:.98rem;letter-spacing:.01em}
+    .lnk-cta .t2{font-size:.8rem;color:${C.body};margin-top:1px}
+    .lnk-cta .arr{flex:none;color:${C.brick};font-size:1.15rem;transition:transform .25s ease}
+    .lnk-cta:hover .arr{transform:translate(2px,-2px)}
+    .lnk-cta.off{cursor:default;opacity:.6}
+    .lnk-cta.off:hover{border-color:${C.frame};background:${C.panel};box-shadow:none}
+    .lnk-cta.off .ic{background:${C.mute}}
     @media(max-width:760px){.proj{grid-template-columns:1fr !important}.proj-thumb{border-right:none !important;border-bottom:1px solid ${C.frame};min-height:160px}}
 
     /* Read more / Categories / nav 부드러운 색 전환 */
@@ -533,7 +592,7 @@ export default function StudyGazette() {
               <div>
                 <div className="eyebrow dbl-bot" style={{ paddingBottom: ".5rem", marginBottom: "1rem" }}>Categories</div>
                 {cats.map(([c, n]) => (
-                  <button key={c} className="cat-row" onClick={() => { setRoute({ name: "cat", value: c }); window.scrollTo({ top: 0 }); }}
+                  <button key={c} className="cat-row" onClick={() => goTo({ name: "cat", value: c })}
                     style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", width: "100%", background: "none", border: "none", padding: ".55rem 0", borderBottom: `1px solid ${C.rule}`, color: C.body, fontSize: ".94rem", cursor: "pointer" }}>
                     <span className="cat-name" style={{ fontFamily: FD, fontWeight: 700, color: C.ink }}>{c}</span>
                     <span style={{ fontFamily: FM, fontSize: 12, color: C.mustard }}>{String(n).padStart(2, "0")}</span>
@@ -693,7 +752,7 @@ export default function StudyGazette() {
         {/* ── 프로젝트 상세 페이지 ── */}
         {route.name === "project" && curProj && (
           <article style={{ maxWidth: 760, margin: "0 auto", padding: "2.8rem 0 4rem" }}>
-            <button onClick={() => goto("projects")} className="eyebrow" style={{ background: "none", border: "none", padding: 0, marginBottom: "1.8rem", cursor: "pointer" }}>← Back to projects</button>
+            <button onClick={goBack} className="eyebrow" style={{ background: "none", border: "none", padding: 0, marginBottom: "1.8rem", cursor: "pointer" }}>← Back to projects</button>
             <div className="kicker" style={{ marginBottom: "1rem" }}>{curProj.kind}</div>
             <h1 style={{ fontFamily: FD, fontWeight: 900, fontSize: "clamp(1.9rem,4.5vw,2.7rem)", color: C.ink, lineHeight: 1.15, margin: "0 0 1.4rem" }}>{curProj.title}</h1>
             <div className="dbl-top dbl-bot" style={{ height: 280, margin: "0 0 2rem", overflow: "hidden" }}><Art seed={curProj.id + curProj.title} /></div>
@@ -713,10 +772,22 @@ export default function StudyGazette() {
             </div>
 
             <div className="eyebrow dbl-bot" style={{ paddingBottom: ".5rem", marginBottom: "1rem" }}>Links</div>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 16, alignItems: "center" }}>
-              {curProj.links.map((lnk) => lnk.url
-                ? <a key={lnk.label} href={lnk.url} target="_blank" rel="noreferrer" className="proj-link">{lnk.label} ↗</a>
-                : <span key={lnk.label} className="proj-link off">{lnk.label} (준비 중)</span>)}
+            <div style={{ display: "flex", flexDirection: "column", gap: 10, maxWidth: 420 }}>
+              {curProj.links.map((lnk) => {
+                const { Icon, sub } = linkMeta(lnk.label);
+                return lnk.url ? (
+                  <a key={lnk.label} href={lnk.url} target="_blank" rel="noreferrer" className="lnk-cta">
+                    <span className="ic"><Icon /></span>
+                    <span className="tx"><span className="t1">{lnk.label}</span><span className="t2">{sub}</span></span>
+                    <span className="arr">↗</span>
+                  </a>
+                ) : (
+                  <span key={lnk.label} className="lnk-cta off">
+                    <span className="ic"><Icon /></span>
+                    <span className="tx"><span className="t1">{lnk.label}</span><span className="t2">준비 중</span></span>
+                  </span>
+                );
+              })}
             </div>
           </article>
         )}
@@ -733,9 +804,9 @@ export default function StudyGazette() {
         {/* ── 글 읽기 ── */}
         {route.name === "post" && cur && (
           <article style={{ maxWidth: 720, margin: "0 auto", padding: "2.8rem 0 4rem" }}>
-            <button onClick={goHome} className="eyebrow" style={{ background: "none", border: "none", padding: 0, marginBottom: "1.8rem", cursor: "pointer" }}>← Back to front page</button>
+            <button onClick={goBack} className="eyebrow" style={{ background: "none", border: "none", padding: 0, marginBottom: "1.8rem", cursor: "pointer" }}>{backLabel}</button>
             <div className="kicker" style={{ marginBottom: "1rem" }}>
-              <button onClick={() => { setRoute({ name: "cat", value: cur.category }); window.scrollTo({ top: 0 }); }} style={{ background: "none", border: "none", padding: 0, fontFamily: FM, letterSpacing: ".12em", textTransform: "uppercase", fontSize: 11, color: C.brick, cursor: "pointer" }}>{cur.category}</button>
+              <button onClick={() => goTo({ name: "cat", value: cur.category })} style={{ background: "none", border: "none", padding: 0, fontFamily: FM, letterSpacing: ".12em", textTransform: "uppercase", fontSize: 11, color: C.brick, cursor: "pointer" }}>{cur.category}</button>
               {"  ·  " + fmt(cur.created) + "  ·  " + readMin(cur.body)}
             </div>
             <h1 style={{ fontFamily: FD, fontWeight: 900, fontSize: "clamp(2rem,5vw,2.9rem)", color: C.ink, lineHeight: 1.12, margin: "0 0 1.4rem" }}>{cur.title}</h1>
