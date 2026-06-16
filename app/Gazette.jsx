@@ -68,6 +68,30 @@ const decodeRoute = (hash) => {
   return { name: "home" };
 };
 
+/* 생성 일러스트 — 이미지가 없는 글/프로젝트의 기본 썸네일 */
+function Art({ seed }) {
+  const h = [...String(seed)].reduce((a, c) => a + c.charCodeAt(0), 0);
+  const v = h % 5, a = (h % 50) - 25;
+  return (
+    <svg viewBox="0 0 100 100" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+      <rect width="100" height="100" fill={C.tintM} />
+      {v === 0 && <><rect x="24" y="24" width="52" height="52" fill={C.mustard} opacity="0.9" /><circle cx="50" cy="50" r="20" fill="none" stroke={C.brick} strokeWidth="1.4" /><line x1="30" y1="50" x2="70" y2="50" stroke={C.ink} strokeWidth="1" /></>}
+      {v === 1 && <><circle cx="56" cy="44" r={20 + (h % 6)} fill={C.mustard} opacity="0.85" /><path d={`M14 ${78 + a / 4} Q50 ${30 + a} 86 ${72 - a / 4}`} fill="none" stroke={C.ink} strokeWidth="1" opacity="0.6" /><circle cx="34" cy="62" r="9" fill="none" stroke={C.brick} strokeWidth="1.3" /></>}
+      {v === 2 && <>{[...Array(4)].map((_, i) => <line key={i} x1={20 + i * 20} y1="22" x2={20 + i * 20 + a / 4} y2="78" stroke={C.ink} strokeWidth="0.9" opacity={0.3 + i * 0.12} />)}<rect x="38" y="40" width="24" height="24" fill={C.brick} opacity="0.7" /></>}
+      {v === 3 && <><path d="M50 24 L72 64 L28 64 Z" fill={C.mustard} opacity="0.85" /><circle cx="50" cy="55" r="26" fill="none" stroke={C.brick} strokeWidth="1.3" strokeDasharray="3 3" /></>}
+      {v === 4 && <><circle cx="50" cy="50" r="3" fill={C.brick} />{[...Array(3)].map((_, i) => <circle key={i} cx="50" cy="50" r={13 + i * 13} fill="none" stroke={C.ink} strokeWidth="0.8" opacity={0.45 - i * 0.12} />)}<rect x="62" y="20" width="16" height="16" fill={C.mustard} opacity="0.8" transform={`rotate(${a} 70 28)`} /></>}
+    </svg>
+  );
+}
+
+/* 프로젝트 스크린샷 — 파일이 없으면(404 등) Art로 안전하게 폴백 */
+function ProjImage({ src, seed, alt, fit = "cover", pos = "top center" }) {
+  const [err, setErr] = useState(false);
+  if (!src || err) return <Art seed={seed} />;
+  return <img src={src} alt={alt} loading="lazy" onError={() => setErr(true)}
+    style={{ width: "100%", height: "100%", objectFit: fit, objectPosition: pos, display: "block" }} />;
+}
+
 const DEMO = [
   { id: "d1", title: "PaLM-E: 로봇을 제어하는 멀티모달 지능", category: "AI 모델 이론", pinned: true,
     tags: ["멀티모달", "embodied", "디퓨전"], created: Date.now() - 5 * 864e5, updated: Date.now() - 5 * 864e5,
@@ -86,11 +110,13 @@ const DEMO = [
 const PROJECTS = [
   {
     id: "p1", title: "식물진단 AI 서비스", kind: "AI 서비스 · 풀스택",
-    summary: "식물 사진을 올리면 1차 진단을 내리고, 객관식 후속 질문으로 보정한 2차 진단까지 제공하는 진단 서비스. Gemini 비전 모델과 RAG를 결합했다.",
+    thumb: "/projects/01-home.png",
+    shots: ["/projects/01-home.png", "/projects/02-result.png", "/projects/03-refine.png", "/projects/04-refine-result.png", "/projects/05-myplants.png"],
+    summary: "식물 사진 한 장을 올리면 모델이 1차 진단을 내리고, 이어지는 객관식 질문으로 답을 보정해 2차 진단까지 제공하는 진단 서비스입니다. Gemini 비전 모델과 RAG를 결합했습니다.",
     highlights: [
-      "치명적 오진(아픈 식물을 건강으로)을 0건으로 사수하면서, 오탐(건강을 아픔으로)을 17.5 → 7.5로 절반 감축",
-      "사진 → Gemini Vision 분석 → ChromaDB RAG 검색 → 생성(gpt-4o-mini) → status 보정 가드 → 객관식 2차 보정 진단",
-      "프롬프트로 환각(없는 병 지어내기) 억제를 4회 시도해 모두 효과 0임을 측정으로 확인 → 출력 단계 후처리 가드로 우회 (라운드 기반 변수격리 평가)",
+      "치명적 오진(아픈 식물을 건강으로 진단)을 0건으로 유지하면서, 오탐(건강한 식물을 아픔으로 진단)을 17.5 → 7.5로 절반 감축",
+      "파이프라인: 사진 → Gemini Vision 분석 → ChromaDB RAG 검색 → 생성(gpt-4o-mini) → status 보정 가드 → 객관식 2차 보정 진단",
+      "프롬프트 기반 환각(없는 병 지어내기) 억제를 4회 시도해 모두 효과 0임을 측정으로 확인하고, 출력 단계 후처리 가드로 우회 (라운드 기반 변수 격리 평가)",
       "검색 품질을 자체 골든셋으로 평가 (Hit@10 = 1.0 / MRR = 0.9)",
     ],
     stack: ["Gemini Vision", "ChromaDB RAG", "gpt-4o-mini", "FastAPI", "Next.js", "Firebase"],
@@ -98,25 +124,25 @@ const PROJECTS = [
     body: `
 ## 화분이 시들어가는데, 이유를 모를 때
 
-물을 더 줘야 할지 덜 줘야 할지, 아니면 병에 걸린 건지. 사진 한 장으로 그 답을 주는 서비스를 만들고 싶었습니다. 사실 제가 식물을 좋아하면서도 잘 죽이는 편이라, 더 애착이 갔던 주제예요.
+물을 더 줘야 할지 덜 줘야 할지, 아니면 병에 걸린 건지 — 사진 한 장으로 그 답을 주는 서비스를 만들고 싶었습니다. 집에서 실내 식물을 여럿 키우다 보니 이런 막막함을 직접 겪을 때가 많았고, 그래서 더 파고들고 싶었던 주제였습니다.
 
 ## 가장 무서운 실수부터 정의했습니다
 
-진단에서 위험한 건 오진의 '방향'입니다. 진짜 아픈 식물을 "건강해요"라고 안심시키면, 사람은 식물을 그냥 죽게 둡니다. 그래서 저는 **아픈 식물을 건강으로 오진하는 것을 0건으로 두는 것**을 첫 번째 절대 규칙으로 삼았고, 끝까지 0건을 지켰습니다.
+진단에서 위험한 건 단순한 오답률이 아니라 오진의 '방향'입니다. 아픈 식물을 "건강하다"고 진단하면, 사용자는 별다른 조치 없이 넘어가거나 진단 자체를 신뢰하지 않게 됩니다. 그래서 아픈 식물을 건강으로 오진하는 경우를 0건으로 막는 것을 첫 번째 절대 규칙으로 삼았습니다.
 
 ## AI를 혼낸다고 환각이 멈추진 않았습니다
 
-처음엔 AI가 없는 병을 지어내는 게 문제라고 봤습니다. 프롬프트에 "소설 쓰지 마라"는 규칙을 넣고 모델도 최신형으로 바꿔봤어요. 네 번을 시도했는데, 측정해보니 전부 효과가 없었습니다. 입력을 아무리 잘 달래도 안 풀리는 영역이 있다는 걸 데이터로 확인한 순간이었습니다.
+처음엔 AI가 없는 병을 지어내는 환각이 문제라고 봤습니다. 프롬프트에 "소설 쓰지 마라"는 규칙을 넣고 모델도 최신형으로 바꿔봤습니다. 하지만 여러 번 시도해 측정해보니 전부 효과가 없었습니다. 입력을 아무리 다듬어도 풀리지 않는 영역이 있다는 걸 데이터로 확인한 순간이었습니다.
 
 ## 그래서 입력 대신 출력을 고쳤습니다
 
-설득을 포기하고, AI가 답을 내놓은 뒤에서 과한 진단을 교정하는 장치를 붙였습니다. 잎 끝의 옅은 변색 같은 가벼운 증상은 건강으로 내리되, 진짜 병변 단어가 하나라도 보이면 절대 손대지 않습니다. 그 결과 **헛걱정(오탐)을 절반으로 줄였습니다** — 놓치면 안 되는 케이스는 0건을 지키면서요.
+AI를 설득하길 포기하고, 답이 나온 뒤 과한 진단을 교정하는 장치를 출력단에 붙였습니다. 잎 끝의 옅은 변색 같은 가벼운 증상은 건강으로 정리하되, 진짜 병변을 가리키는 단어가 하나라도 보이면 절대 손대지 않도록 설계했습니다. 그 결과 헛걱정(오탐)을 절반으로 줄일 수 있었습니다.
 
 ## 진단을 넘어 서비스로
 
-여기에 객관식 후속 질문으로 보정하는 2차 진단, 내 식물 기록과 시간순 비교 기능까지 얹어 실제로 쓸 수 있는 형태로 만들었습니다. 작은 화분 하나도 끝까지 책임지고 싶은 마음으로 다듬었어요.
+여기에 객관식 후속 질문으로 답을 보정하는 2차 진단을 더했고, 내가 키우는 식물이 나아지고 있는지 나빠지고 있는지를 한눈에 따라갈 수 있도록 기록·시간순 비교 기능도 얹었습니다. 일회성 진단을 넘어, 식물의 상태 변화를 꾸준히 살필 수 있는 형태로 만든 것입니다.
 
-> 가장 애착이 가는 부분은 정확도 숫자가 아니라, 안 되는 걸 측정으로 인정하고 방향을 바꾼 그 과정입니다.
+이 프로젝트에서 가장 크게 배운 건, 잘 되는 것보다 '안 되는 것'을 정확히 측정하는 일의 가치였습니다. 직관적으로 옳아 보이는 접근(프롬프트 개선, 최신 모델 교체)도 막상 데이터로 확인하면 효과가 없을 수 있고, 그때 고집을 부리는 대신 측정 결과를 근거로 방향을 바꾸는 문제 해결 방식이 이 프로젝트로 단단해진 강점입니다.
 
 기술적인 파이프라인과 측정 방법은 GitHub에 자세히 정리해 두었습니다.
 `,
@@ -224,6 +250,7 @@ const Magnifier = ({ size = 13, color = C.ink, sw = 1.3 }) => (
 export default function StudyGazette() {
   const [posts, setPosts] = useState(null);
   const [route, setRoute] = useState({ name: "home" });
+  const [lightbox, setLightbox] = useState(null); // 원본 보기용 이미지 src
 
   /* Archive AI 챗봇 상태 */
   const [chatInput, setChatInput] = useState("");
@@ -252,6 +279,14 @@ export default function StudyGazette() {
     window.addEventListener("keydown", h);
     return () => window.removeEventListener("keydown", h);
   }, []);
+
+  /* 라이트박스: Esc로 닫기 */
+  useEffect(() => {
+    if (!lightbox) return;
+    const onKey = (e) => { if (e.key === "Escape") setLightbox(null); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [lightbox]);
 
   /* 브라우저 뒤로/앞으로 가기 ↔ 화면(route) 상태 동기화 (URL 해시 기반) */
   useEffect(() => {
@@ -370,6 +405,7 @@ export default function StudyGazette() {
     .g-ul{margin:.6rem 0 1rem;padding:0;list-style:none}
     .g-ul li{position:relative;padding-left:1.3rem;margin:.4rem 0;line-height:1.7}
     .g-ul li:before{content:"§";position:absolute;left:0;color:${C.mustard};font-weight:700}
+    .g-bull li:before{content:"•"}
     .g-quote{border-left:3px solid ${C.mustard};margin:1.2rem 0;padding:.3rem 0 .3rem 1.1rem;color:${C.ink};font-style:italic;font-family:${FD};font-size:1.16rem}
     .g-code{background:${C.tintM};color:${C.ink};padding:.08em .4em;border-radius:2px;font-size:.9em;font-family:${FM}}
     .g-pre{background:${C.ink};color:${C.bg};padding:1rem;overflow-x:auto;font-size:.85rem;margin:1rem 0;font-family:${FM}}
@@ -394,8 +430,20 @@ export default function StudyGazette() {
     .proj:hover h2{color:${C.brick} !important}
     .proj .proj-go{font-family:${FM};font-size:12px;color:${C.mustard};opacity:0;transform:translateX(-6px);transition:opacity .3s ease,transform .3s ease}
     .proj:hover .proj-go{opacity:1;transform:translateX(0)}
-    .proj-thumb{position:relative;overflow:hidden;border-right:1px solid ${C.frame};min-height:220px}
+    .proj-thumb{position:relative;overflow:hidden;border-right:1px solid ${C.frame};min-height:220px;background:${C.panel}}
     .proj-thumb svg{width:100%;height:100%;display:block}
+    .proj-thumb img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:top center;display:block}
+    /* 프로젝트 스크린샷 페이퍼 타일 (상세 히어로) */
+    .proj-shots{display:grid;grid-template-columns:repeat(auto-fit,minmax(92px,1fr));gap:12px;align-items:start;background:${C.panel};padding:22px 18px;margin:0 0 2rem;overflow:hidden}
+    .proj-shots .tile{width:100%;aspect-ratio:9/16;padding:0;border:1px solid ${C.frame};border-radius:7px;overflow:hidden;background:#fff;box-shadow:0 6px 18px rgba(44,49,58,.13);cursor:zoom-in;transition:transform .2s ease,box-shadow .2s ease}
+    .proj-shots .tile:hover{transform:translateY(-3px);box-shadow:0 12px 26px rgba(44,49,58,.2)}
+    .proj-shots .tile img,.proj-shots .tile svg{width:100%;height:100%;object-fit:cover;object-position:top center;display:block}
+    /* 라이트박스 (원본 보기) */
+    .lb{position:fixed;inset:0;z-index:100;background:rgba(20,22,26,.85);display:flex;align-items:flex-start;justify-content:center;overflow:auto;padding:36px 20px;cursor:zoom-out;animation:lbfade .18s ease}
+    @keyframes lbfade{from{opacity:0}to{opacity:1}}
+    .lb img{max-width:min(420px,92vw);height:auto;border-radius:8px;box-shadow:0 24px 70px rgba(0,0,0,.55);cursor:default}
+    .lb-close{position:fixed;top:14px;right:20px;width:42px;height:42px;border:none;background:rgba(255,255,255,.12);color:#fff;font-size:26px;line-height:1;border-radius:50%;cursor:pointer;transition:background .2s ease}
+    .lb-close:hover{background:rgba(255,255,255,.25)}
     .proj-link{font-family:${FM};font-size:12px;letter-spacing:.04em;color:${C.brick};border-bottom:1.5px solid ${C.brick};padding-bottom:1px;text-decoration:none;transition:color .3s ease,border-color .3s ease}
     .proj-link:hover{color:${C.ink};border-color:${C.ink}}
     .proj-link.off{color:${C.mute};border-color:${C.rule};cursor:default}
@@ -453,20 +501,7 @@ export default function StudyGazette() {
   `;
 
   /* 머스터드/벽돌 톤 추상 동판화 일러스트 (실사진 대체, 제목에서 결정) */
-  const Art = ({ seed }) => {
-    const h = [...String(seed)].reduce((a, c) => a + c.charCodeAt(0), 0);
-    const v = h % 5, a = (h % 50) - 25;
-    return (
-      <svg viewBox="0 0 100 100" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
-        <rect width="100" height="100" fill={C.tintM} />
-        {v === 0 && <><rect x="24" y="24" width="52" height="52" fill={C.mustard} opacity="0.9" /><circle cx="50" cy="50" r="20" fill="none" stroke={C.brick} strokeWidth="1.4" /><line x1="30" y1="50" x2="70" y2="50" stroke={C.ink} strokeWidth="1" /></>}
-        {v === 1 && <><circle cx="56" cy="44" r={20 + (h % 6)} fill={C.mustard} opacity="0.85" /><path d={`M14 ${78 + a / 4} Q50 ${30 + a} 86 ${72 - a / 4}`} fill="none" stroke={C.ink} strokeWidth="1" opacity="0.6" /><circle cx="34" cy="62" r="9" fill="none" stroke={C.brick} strokeWidth="1.3" /></>}
-        {v === 2 && <>{[...Array(4)].map((_, i) => <line key={i} x1={20 + i * 20} y1="22" x2={20 + i * 20 + a / 4} y2="78" stroke={C.ink} strokeWidth="0.9" opacity={0.3 + i * 0.12} />)}<rect x="38" y="40" width="24" height="24" fill={C.brick} opacity="0.7" /></>}
-        {v === 3 && <><path d="M50 24 L72 64 L28 64 Z" fill={C.mustard} opacity="0.85" /><circle cx="50" cy="55" r="26" fill="none" stroke={C.brick} strokeWidth="1.3" strokeDasharray="3 3" /></>}
-        {v === 4 && <><circle cx="50" cy="50" r="3" fill={C.brick} />{[...Array(3)].map((_, i) => <circle key={i} cx="50" cy="50" r={13 + i * 13} fill="none" stroke={C.ink} strokeWidth="0.8" opacity={0.45 - i * 0.12} />)}<rect x="62" y="20" width="16" height="16" fill={C.mustard} opacity="0.8" transform={`rotate(${a} 70 28)`} /></>}
-      </svg>
-    );
-  };
+  /* Art, ProjImage 는 모듈 레벨로 이동 (파일 상단) */
 
   /* 가로형 목록 아이템 (Front Page / 카테고리 / 검색 결과) */
   const ListItem = ({ p }) => (
@@ -730,7 +765,7 @@ export default function StudyGazette() {
               {PROJECTS.map((pr, i) => (
                 <article key={pr.id} className="proj" onClick={() => openProject(pr.id)} style={{ border: `1px solid ${C.frame}`, background: C.panel, display: "grid", gridTemplateColumns: "300px 1fr" }}>
                   <div className="proj-thumb">
-                    <Art seed={pr.id + pr.title} />
+                    <ProjImage src={pr.thumb} seed={pr.id + pr.title} alt={pr.title} fit="cover" pos="top center" />
                     <div className="kicker" style={{ position: "absolute", top: 12, left: 12, background: C.bg, border: `1.5px solid ${C.frame}`, padding: "3px 11px" }}>No. {String(i + 1).padStart(2, "0")}</div>
                   </div>
                   <div style={{ padding: "1.6rem 1.8rem" }}>
@@ -755,14 +790,22 @@ export default function StudyGazette() {
             <button onClick={goBack} className="eyebrow" style={{ background: "none", border: "none", padding: 0, marginBottom: "1.8rem", cursor: "pointer" }}>← Back to projects</button>
             <div className="kicker" style={{ marginBottom: "1rem" }}>{curProj.kind}</div>
             <h1 style={{ fontFamily: FD, fontWeight: 900, fontSize: "clamp(1.9rem,4.5vw,2.7rem)", color: C.ink, lineHeight: 1.15, margin: "0 0 1.4rem" }}>{curProj.title}</h1>
-            <div className="dbl-top dbl-bot" style={{ height: 280, margin: "0 0 2rem", overflow: "hidden" }}><Art seed={curProj.id + curProj.title} /></div>
+            {curProj.shots?.length
+              ? <div className="dbl-top dbl-bot proj-shots">
+                  {curProj.shots.map((s, i) => (
+                    <button className="tile" key={i} onClick={() => setLightbox(s)} aria-label={`${curProj.title} 화면 ${i + 1} 원본 보기`}>
+                      <ProjImage src={s} seed={curProj.id + i} alt={`${curProj.title} 화면 ${i + 1}`} />
+                    </button>
+                  ))}
+                </div>
+              : <div className="dbl-top dbl-bot" style={{ height: 280, margin: "0 0 2rem", overflow: "hidden" }}><Art seed={curProj.id + curProj.title} /></div>}
 
-            <p style={{ fontSize: "1.08rem", color: C.body, lineHeight: 1.85, margin: "0 0 1.8rem" }}>{curProj.summary}</p>
+            <p style={{ fontSize: ".97rem", color: C.body, lineHeight: 1.85, margin: "0 0 1.8rem" }}>{curProj.summary}</p>
 
             {curProj.body && <div style={{ fontSize: "1.05rem", marginBottom: "2.4rem" }}><Body text={curProj.body} /></div>}
 
             <div className="eyebrow dbl-bot" style={{ paddingBottom: ".5rem", marginBottom: "1rem" }}>Highlights</div>
-            <ul className="g-ul" style={{ margin: "0 0 2rem" }}>
+            <ul className="g-ul g-bull" style={{ margin: "0 0 2rem" }}>
               {curProj.highlights.map((h, j) => <li key={j} style={{ fontSize: "1rem", color: C.body }}>{h}</li>)}
             </ul>
 
@@ -855,6 +898,13 @@ export default function StudyGazette() {
           <span className="kicker">Printed in good faith · {posts.length} entries on file</span>
         </div>
       </footer>
+
+      {lightbox && (
+        <div className="lb" onClick={() => setLightbox(null)} role="dialog" aria-modal="true">
+          <button className="lb-close" onClick={() => setLightbox(null)} aria-label="닫기">×</button>
+          <img src={lightbox} alt="원본 화면" onClick={(e) => e.stopPropagation()} />
+        </div>
+      )}
     </div>
   );
 }
