@@ -770,7 +770,7 @@ export default function StudyGazette() {
           <section style={{ padding: "2.4rem 0 4rem" }}>
             <div style={{ textAlign: "center", marginBottom: "2.2rem" }}>
               <div className="eyebrow" style={{ marginBottom: 10 }}>Projects</div>
-              <h1 style={{ fontFamily: FD, fontWeight: 900, fontSize: "clamp(1.9rem,4.5vw,2.6rem)", color: C.ink, lineHeight: 1.1, margin: "0 0 .5rem" }}>만든 것들</h1>
+              <h1 style={{ fontFamily: FD, fontWeight: 900, fontSize: "clamp(1.9rem,4.5vw,2.6rem)", color: C.ink, lineHeight: 1.1, margin: "0 0 .5rem" }}>빌드 노트</h1>
               <p style={{ fontFamily: FD, fontStyle: "italic", color: C.mute, fontSize: "1.05rem", margin: 0 }}>공부가 코드와 제품이 된 기록</p>
             </div>
 
