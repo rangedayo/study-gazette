@@ -806,7 +806,7 @@ export default function StudyGazette() {
 
             <div className="eyebrow dbl-bot" style={{ paddingBottom: ".5rem", marginBottom: "1rem" }}>Highlights</div>
             <ul className="g-ul g-bull" style={{ margin: "0 0 2rem" }}>
-              {curProj.highlights.map((h, j) => <li key={j} style={{ fontSize: "1rem", color: C.body }}>{h}</li>)}
+              {curProj.highlights.map((h, j) => <li key={j} style={{ fontSize: ".97rem", color: C.body }}>{h}</li>)}
             </ul>
 
             <div className="eyebrow dbl-bot" style={{ paddingBottom: ".5rem", marginBottom: "1rem" }}>Stack</div>
