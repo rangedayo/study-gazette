@@ -88,8 +88,10 @@ function Art({ seed }) {
 function ProjImage({ src, seed, alt, fit = "cover", pos = "top center" }) {
   const [err, setErr] = useState(false);
   if (!src || err) return <Art seed={seed} />;
-  return <img src={src} alt={alt} loading="lazy" onError={() => setErr(true)}
-    style={{ width: "100%", height: "100%", objectFit: fit, objectPosition: pos, display: "block" }} />;
+  const style = fit === "natural"
+    ? { width: "100%", height: "auto", display: "block" }
+    : { width: "100%", height: "100%", objectFit: fit, objectPosition: pos, display: "block" };
+  return <img src={src} alt={alt} loading="lazy" onError={() => setErr(true)} style={style} />;
 }
 
 const DEMO = [
@@ -149,34 +151,41 @@ AI를 설득하길 포기하고, 답이 나온 뒤 과한 진단을 교정하는
   },
   {
     id: "p2", title: "전국 17개 시도 태양광 발전량 예측 + ESS 운영 시뮬레이션", kind: "시계열 ML · 데이터 분석",
-    summary: "전국 17개 시도의 태양광 발전량을 예측해 ESS 충·방전 운영 가치를 분석한 프로젝트. Naive · XGBoost · LSTM · AutoGluon을 같은 파이프라인에서 평가하고, MPC(LP 최적화) 운영까지 도입했다.",
+    thumb: "/projects/ess-dashboard.png",
+    wide: "/projects/ess-dashboard.png",
+    summary: "전국 17개 시도의 태양광 발전량을 예측해 ESS 충·방전 운영 가치를 분석한 프로젝트로, Naive · XGBoost · LSTM · AutoGluon을 같은 파이프라인에서 평가하고, MPC(LP 최적화) 운영까지 도입했습니다.",
     highlights: [
       "XGBoost로 Naive 대비 MAE 55.8%↓ (21.74 → 9.61 MWh) — LSTM(17.82)·트랜스포머 앙상블 대비 우위",
-      "모델 정확도의 한계효용 ≈ 0 — 완벽 예측(oracle)과 XGBoost의 운영 수익 차이 0.08%. 시스템 구조(MPC)가 결과를 결정함을 17지역×6정책으로 실증",
+      "모델 정확도의 한계효용 ≈ 0 — 완벽 예측(oracle)과 XGBoost의 운영 수익 차이는 0.08%. 반면 운영 구조를 MPC로 바꾸자 순수익 +49.5%(1,689억 → 2,526억원). 17지역×6정책으로 실증",
       "LSTM이 ESS 지표에서 좋아 보인 원인을 추적해 시뮬레이터 비대칭 분기 버그로 규명 (정확도 메트릭 ≠ 운영 성과)",
+      "예측에 일부러 노이즈를 넣어 정확도를 떨어뜨려도 자급률은 79.05% → 79.92%로 오히려 미세 상승 — 정확도가 운영 가치로 자동 전환되지 않음을 27개 시뮬 점으로 정량화",
     ],
     stack: ["XGBoost", "LSTM", "AutoGluon", "scipy LP (MPC)", "FastAPI", "Streamlit"],
     links: [{ label: "GitHub", url: "https://github.com/rangedayo/energy-time-series-forecast" }],
     body: `
 ## "더 정확하면 더 이득"일까요?
 
-태양광 발전량을 더 정확히 예측하면 배터리(ESS)를 더 잘 굴려 돈을 더 벌 것이다 — 당연해 보이는 가정에서 출발했습니다. 그런데 측정해보니 그 가정이 틀렸어요.
+태양광 발전량을 더 정확히 예측하면 배터리(ESS)를 더 잘 굴려 돈을 더 벌 것이다 — 당연해 보이는 가정에서 출발했습니다. 평소 환경을 위한 기술에 관심이 많아 첫 프로젝트 주제로 골랐고, 태양광 에너지를 어떻게 하면 실제 수익으로 만들어낼 수 있을지 전국 17개 시도의 1년치 데이터로 직접 풀어보고 싶었습니다.
 
-## 모델은 제대로 골랐지만
+## 모델은 제대로 골랐는데, 이상했습니다
 
-XGBoost, LSTM, 트랜스포머까지 같은 파이프라인에서 비교했고, XGBoost가 가장 정확했습니다(Naive 대비 오차 **55.8% 감소**). 그런데 여기서 이상한 일이 벌어졌습니다. 완벽한 예측을 넣어도 운영 수익은 **0.08%밖에 안 늘었어요.**
+XGBoost, LSTM, 트랜스포머까지 같은 파이프라인에서 비교했고, XGBoost가 가장 정확했습니다(Naive 대비 오차 **55.8% 감소**). 하지만 모델 대신 2023년 실제값을 그대로 넣은 '완벽한 예측'으로 운영해봐도 수익은 **0.08%밖에** 안 늘었습니다. '정확히 맞히는 것'과 '그 예측이 실제 수익을 만드는 것'은 완전히 다른 문제였던 겁니다.
+
+## 더 정교한 모델은 답이 아니었습니다
+
+그래도 처음엔 모델을 더 정교하게 만들면 가치가 올라갈 거라 기대했습니다. AutoGluon으로 17개 모델을 앙상블하고, TFT·PatchTST 같은 트랜스포머 4종도 더해봤지만 측정해보니 개선이 없었습니다. 트랜스포머는 앙상블 가중치 0%, 발전 규모가 큰 전남만 따로 학습한 실험도 운영 결과 변화 0%. 심지어 예측에 일부러 노이즈를 넣어 정확도를 떨어뜨려도 자급률은 79.05% → 79.92%로 오히려 미세하게 올랐습니다. 정확도를 아무리 높여도 운영 가치로 이어지지 않는 영역이 있다는 걸 깨달았습니다.
 
 ## 진짜 답은 시스템 구조에 있었습니다
 
-결과를 거의 전부 결정한 건 예측 정확도가 아니라, 배터리를 언제 왜 쓰는지(운영 전략)였습니다. 같은 데이터에서 평가 지표만 바꿔도 결론이 갈렸어요. "정확도를 올리자"가 아니라 "무엇이 실제로 결과를 만드는가"를 봐야 했습니다.
+그래서 모델은 그대로 두고 운영 방식만 바꿨습니다. '남으면 충전, 모자라면 방전'이라는 단순한 규칙을, 24시간을 내다보고 충·방전 시점을 통째로 계산하는 MPC로 교체했습니다. 그러자 같은 데이터, 같은 예측인데 순수익이 **+49.5%** 올랐습니다(1,689억 → 2,526억원). 완벽한 예측을 썼을 때의 수익 개선 효과는 0.08%에 그쳤지만, 운영 구조를 바꾼 효과는 49.5%였습니다. 결과를 가른 건 모델이 아니라 시스템 구조였습니다.
 
-## 좋아 보이는 숫자를 의심한 순간
+## 결과를 의심하고, 기준을 바꿨습니다
 
-한번은 LSTM이 운영 지표에서 더 좋아 보였습니다. 그냥 "LSTM이 낫네" 하고 넘어갈 수도 있었어요. 하지만 그 차이가 어디서 오는지 시뮬레이터를 직접 뜯어봤고, 알고 보니 모델 성능이 아니라 **시뮬레이터의 분기 버그** 때문이었습니다. 눈에 보이는 결과를 그대로 믿지 않은 게 이 프로젝트에서 제일 뿌듯한 부분이에요.
+결과가 좋아 보일 때도 숫자를 그대로 믿지 않고 왜 그런지 끝까지 파고들었고, 그 과정에서 '정확도를 올리자'던 처음의 목표를 내려놓고 운영 구조를 바꾸는 쪽으로 방향을 돌릴 수 있었습니다. 눈에 보이는 결과를 그대로 믿지 않은 것, 그게 이 프로젝트에서 제일 뿌듯한 부분입니다.
 
-> 더 정확한 모델을 만드는 것보다, 무엇이 결과를 만드는지 아는 게 먼저였습니다.
+이 프로젝트에서 가장 크게 배운 건, 잘 되는 것보다 '안 되는 것'을 정확히 측정하는 일의 가치였습니다. 직관적으로 옳아 보이는 접근(더 정교한 모델, 최신 트랜스포머)도 막상 데이터로 확인하면 효과가 없을 수 있고, 그때 고집을 부리는 대신 측정 결과를 근거로 방향을 바꾸는 문제 해결 방식이 이 프로젝트로 단단해진 강점입니다.
 
-17개 지역 × 6개 운영 정책으로 1년치를 실증한 분석과 코드는 GitHub에 있습니다.
+전체 분석 파이프라인과 측정 방법은 GitHub에 자세히 정리해 두었습니다.
 `,
   },
   {
@@ -438,10 +447,14 @@ export default function StudyGazette() {
     .proj-shots .tile{width:100%;aspect-ratio:9/16;padding:0;border:1px solid ${C.frame};border-radius:7px;overflow:hidden;background:#fff;box-shadow:0 6px 18px rgba(44,49,58,.13);cursor:zoom-in;transition:transform .2s ease,box-shadow .2s ease}
     .proj-shots .tile:hover{transform:translateY(-3px);box-shadow:0 12px 26px rgba(44,49,58,.2)}
     .proj-shots .tile img,.proj-shots .tile svg{width:100%;height:100%;object-fit:cover;object-position:top center;display:block}
+    /* 가로형 대시보드 (상세 히어로, 풀폭 한 장) */
+    .proj-wide{display:block;width:100%;padding:0;border-left:none;border-right:none;background:${C.panel};margin:0 0 2rem;cursor:zoom-in;overflow:hidden}
+    .proj-wide img{display:block;width:100%;height:auto}
+    .proj-wide svg{display:block;width:100%;height:300px}
     /* 라이트박스 (원본 보기) */
     .lb{position:fixed;inset:0;z-index:100;background:rgba(20,22,26,.85);display:flex;align-items:flex-start;justify-content:center;overflow:auto;padding:36px 20px;cursor:zoom-out;animation:lbfade .18s ease}
     @keyframes lbfade{from{opacity:0}to{opacity:1}}
-    .lb img{max-width:min(420px,92vw);height:auto;border-radius:8px;box-shadow:0 24px 70px rgba(0,0,0,.55);cursor:default}
+    .lb img{max-width:min(1800px,97vw);max-height:96vh;width:auto;height:auto;border-radius:8px;box-shadow:0 24px 70px rgba(0,0,0,.55);cursor:default}
     .lb-close{position:fixed;top:14px;right:20px;width:42px;height:42px;border:none;background:rgba(255,255,255,.12);color:#fff;font-size:26px;line-height:1;border-radius:50%;cursor:pointer;transition:background .2s ease}
     .lb-close:hover{background:rgba(255,255,255,.25)}
     .proj-link{font-family:${FM};font-size:12px;letter-spacing:.04em;color:${C.brick};border-bottom:1.5px solid ${C.brick};padding-bottom:1px;text-decoration:none;transition:color .3s ease,border-color .3s ease}
@@ -798,7 +811,11 @@ export default function StudyGazette() {
                     </button>
                   ))}
                 </div>
-              : <div className="dbl-top dbl-bot" style={{ height: 280, margin: "0 0 2rem", overflow: "hidden" }}><Art seed={curProj.id + curProj.title} /></div>}
+              : curProj.wide
+                ? <button type="button" className="dbl-top dbl-bot proj-wide" onClick={() => setLightbox(curProj.wide)} aria-label={`${curProj.title} 대시보드 원본 보기`}>
+                    <ProjImage src={curProj.wide} seed={curProj.id + curProj.title} alt={`${curProj.title} 대시보드`} fit="natural" />
+                  </button>
+                : <div className="dbl-top dbl-bot" style={{ height: 280, margin: "0 0 2rem", overflow: "hidden" }}><Art seed={curProj.id + curProj.title} /></div>}
 
             <p style={{ fontSize: ".97rem", color: C.body, lineHeight: 1.85, margin: "0 0 1.8rem" }}>{curProj.summary}</p>
 
