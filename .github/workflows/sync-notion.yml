@@ -1,0 +1,47 @@
+name: Sync Notion → posts.json
+
+on:
+  schedule:
+    - cron: "0 * * * *" # 매시 정각 자동 동기화
+  workflow_dispatch: {} # Actions 탭에서 "Run workflow" 수동 실행
+
+# 자동 커밋을 위해 쓰기 권한 부여
+permissions:
+  contents: write
+
+# 동시 실행 방지 (겹치면 최신 것만)
+concurrency:
+  group: sync-notion
+  cancel-in-progress: true
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      # @notionhq/client 만 있으면 되므로 가볍게 설치
+      - name: Install dependencies
+        run: npm install @notionhq/client@^2.2.15 --no-save
+
+      - name: Sync from Notion
+        env:
+          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+          NOTION_DB_ID: ${{ secrets.NOTION_DB_ID }}
+        run: node scripts/sync-notion.mjs
+
+      - name: Commit if changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          if git diff --quiet -- data/posts.json; then
+            echo "변경 없음 — 커밋 건너뜀"
+          else
+            git add data/posts.json
+            git commit -m "chore: Notion 글 동기화 (자동)"
+            git push
+          fi
