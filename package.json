@@ -7,7 +7,9 @@
     "build": "next build",
     "start": "next start",
     "sync:notion": "node scripts/sync-notion.mjs",
-    "import:notion": "node scripts/import-to-notion.mjs"
+    "import:notion": "node scripts/import-to-notion.mjs",
+    "sync:projects": "node scripts/sync-projects.mjs",
+    "import:projects": "node scripts/import-projects.mjs"
   },
   "dependencies": {
     "@babel/parser": "^7.29.7",

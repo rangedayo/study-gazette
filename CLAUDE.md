@@ -5,14 +5,16 @@
 ## 구조 (어디에 뭐가 있나)
 - 앱 전체가 사실상 `app/Gazette.jsx` 한 파일. `app/page.jsx`가 이걸 렌더한다.
 - **팔레트는 파일 상단 `C` 상수, 폰트는 `FD`(Playfair, 제목)·`FB`(Inter, 본문)·`FM`(DM Mono) 상수**에 정의 — 색/폰트는 항상 여기 값을 재사용하고 하드코딩하지 말 것.
-- 글/프로젝트 데이터는 같은 파일의 `DEMO`(글)·`PROJECTS`(프로젝트) 배열에 인라인.
+- 글 데이터는 `data/posts.json`(Notion 동기화 결과), 폴백용 `DEMO` 배열은 파일 상단에 인라인.
+- 프로젝트 **텍스트**는 `data/projects.json`(Notion 동기화 결과)에서 읽고, **스크린샷**은 코드의 `PROJECT_SHOTS` 맵(id→경로)과 id로 병합한다(`const PROJECTS = projects.json + PROJECT_SHOTS`).
 
 ## 코드 규칙 (코드만 봐선 모를 것들)
 - **본문 글자 크기는 `.97rem`로 통일**. 프로젝트 요약·본문(`.g-p`)·Highlights 전부 동일하게 맞춘다.
 - **라우팅은 URL 해시 기반**(`#cat:`/`#post:`/`#project:`). `history.state`에 화면 정보를 저장하지 말 것 — App Router가 덮어써서 뒤로가기가 깨진다. 화면 전환은 `goTo`(해시 push)로, 인페이지 뒤로가기는 `goBack`(`history.back`)으로 처리.
 - **본문 마크다운 파서는 자체 구현**(`Body` 함수). 지원: `##` 제목, `**굵게**`, `` `코드` ``, `> 인용`, `- 목록`, **이미지(`![캡션](경로)`)**. 이미지는 캡션과 함께 렌더되고 클릭하면 라이트박스로 원본을 본다(`onImg`→`setLightbox`).
 - **글 이미지 동기화**: Notion 글에 넣은 사진은 `scripts/sync-notion.mjs`가 받아 `public/posts/<글id>/NN.png`로 저장하고 본문에 `![]()`를 삽입한다(Notion URL은 만료되므로 파일로 보관). 워크플로가 `public/posts`도 함께 커밋한다.
-- **프로젝트 스크린샷**: `public/projects/`에 둔다. 카드 썸네일·상세 히어로는 페이퍼 타일(`.proj-shots`)로 렌더하고, 클릭하면 라이트박스로 원본을 본다. 이미지가 없으면 `ProjImage`가 생성 일러스트 `Art`로 자동 폴백.
+- **프로젝트 스크린샷**: `public/projects/`에 두고 `PROJECT_SHOTS` 맵에서 id별 `thumb`/`shots`/`wide`를 지정(방법 1 — 스크린샷은 코드 관리, 텍스트만 Notion). 카드 썸네일·상세 히어로는 페이퍼 타일(`.proj-shots`)로 렌더하고, 클릭하면 라이트박스로 원본을 본다. 이미지가 없으면 `ProjImage`가 생성 일러스트 `Art`로 자동 폴백.
+- **프로젝트 Notion 동기화**: 프로젝트 텍스트(title/kind/summary/highlights/stack/links/body)는 별도 Notion DB(`프로젝트 (Projects)`, id `933578ac0f354cad99cd9736ba3f2e80`)에서 작성 → `scripts/sync-projects.mjs`가 `data/projects.json` 생성. 본문 머메이드는 Notion 코드블록(언어 `mermaid`)으로 보존. 본문 인라인 이미지는 `public/projects/<id>/`에 저장.
 
 ## 작업 취향 (반복 안 해도 되게)
 - 응답은 **한국어**로.

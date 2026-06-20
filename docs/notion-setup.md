@@ -112,3 +112,44 @@ $env:NOTION_TOKEN="secret_..."; $env:NOTION_DB_ID="32자리id"; npm run sync:not
   실수 시 Notion 휴지통(기본 30일) 또는 git 히스토리에서 복구 가능.
 - **글 id**: `Slug`를 비우면 Notion 페이지 id로 자동 생성된다. 한번 발행한 글의
   공유 URL을 안정적으로 유지하려면 `Slug`(예: `clip-intro`)를 채워두는 걸 권장.
+
+---
+
+## 5. 프로젝트(빌드 노트) 동기화
+
+프로젝트 **텍스트**도 글과 같은 방식으로 Notion에서 작성·수정한다.
+스크린샷(카드 썸네일·상세 히어로)은 Notion이 아니라 **코드(`app/Gazette.jsx`의 `PROJECT_SHOTS` 맵 + `public/projects/`)** 에서 관리한다(거의 안 바뀌므로). 스크린샷 교체가 필요하면 코드에서 바꾼다.
+
+- 프로젝트 DB: **프로젝트 (Projects)** — https://app.notion.com/p/933578ac0f354cad99cd9736ba3f2e80
+- DB id는 동기화 스크립트에 기본값으로 들어 있어 **별도 GitHub Secret이 필요 없다**(원하면 `NOTION_PROJECTS_DB_ID`로 덮어쓰기 가능).
+
+| 속성 | 타입 | 역할 |
+|------|------|------|
+| `Name` | Title | 프로젝트 제목 |
+| `Kind` | Text | 부제 (예: `AI 서비스 · 풀스택`) |
+| `Summary` | Text | 카드·상세 상단 요약 |
+| `Stack` | Multi-select | 기술 스택 |
+| `Highlights` | Text | 성과 불릿 — **한 줄에 하나** |
+| `Links` | Text | `라벨 \| url` 형식 — **한 줄에 하나** |
+| `Date` | Date | 목록 정렬 기준(내림차순) |
+| `Published` | Checkbox | 체크된 것만 사이트 노출 |
+| `Pinned` | Checkbox | 상단 고정 |
+| `Slug` | Text | URL id (`p1`/`p2`/`p3`) |
+
+본문은 각 페이지를 열어 작성한다. 머메이드 다이어그램은 **코드블록 언어를 `mermaid`로** 두면 사이트에서 그대로 렌더된다.
+
+### 최초 1회 설정
+
+1. **integration 연결**: 위 프로젝트 DB 페이지 우상단 **··· → Connections → (글 DB에 쓰던 integration 선택)**.
+   (이걸 안 하면 GitHub Action이 토큰이 있어도 프로젝트 DB를 못 읽는다.)
+2. **기존 3개 가져오기** (`data/projects.json` → Notion):
+   ```powershell
+   $env:NOTION_TOKEN="secret_..."; npm run import:projects
+   ```
+   ⚠️ **한 번만 실행** — 다시 돌리면 중복 생성된다.
+
+### 동기화
+
+- **자동**: 매시 정각 GitHub Action이 글과 함께 프로젝트도 동기화(`sync-projects.mjs` → `data/projects.json`).
+- **수동(즉시)**: Actions 탭 → Run workflow.
+- **로컬 테스트**: `$env:NOTION_TOKEN="secret_..."; npm run sync:projects`
