@@ -8,11 +8,12 @@
 // CI 실행:    .github/workflows/sync-notion.yml 에서 secret 주입
 //
 // 본문은 사이트의 Body 파서가 지원하는 마크다운 부분집합으로만 변환한다:
-//   #/##/### 제목, **굵게**, `코드`, ``` 코드블록, > 인용, - 목록
-// (이미지 등 그 외 블록은 의도적으로 건너뛴다 — 현재는 텍스트 전용)
+//   #/##/### 제목, **굵게**, `코드`, ``` 코드블록, > 인용, - 목록, 이미지
+// 이미지 블록은 받아서 public/posts/<id>/ 에 저장하고 ![](...) 로 링크한다.
+// (구분선·표·토글 등 그 외 블록은 건너뛴다)
 
 import { Client } from "@notionhq/client";
-import { writeFile, mkdir } from "node:fs/promises";
+import { writeFile, mkdir, rm } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -28,6 +29,30 @@ const notion = new Client({ auth: TOKEN });
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const OUT_PATH = resolve(__dirname, "../data/posts.json");
+const IMG_ROOT = resolve(__dirname, "../public/posts"); // 글 이미지 저장 위치
+
+/* ── 이미지 다운로드 ───────────────────────────────────── */
+// Notion 호스팅 이미지 URL은 ~1시간 뒤 만료되므로, 받아서 public/에 저장한다.
+
+const extFromUrl = (url) => {
+  try {
+    const m = new URL(url).pathname.match(/\.(png|jpe?g|gif|webp|svg)$/i);
+    return m ? m[0].toLowerCase() : ".png";
+  } catch {
+    return ".png";
+  }
+};
+
+// 이미지를 public/posts/<id>/NN.ext 로 저장하고 사이트용 경로를 돌려준다
+async function saveImage(url, postId, index) {
+  const dir = resolve(IMG_ROOT, postId);
+  await mkdir(dir, { recursive: true });
+  const name = String(index).padStart(2, "0") + extFromUrl(url);
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  await writeFile(resolve(dir, name), Buffer.from(await res.arrayBuffer()));
+  return `/posts/${postId}/${name}`;
+}
 
 /* ── Notion 속성 읽기 헬퍼 ────────────────────────────── */
 
@@ -78,12 +103,26 @@ async function fetchAllBlocks(blockId) {
   return blocks;
 }
 
-function blocksToMarkdown(blocks) {
+async function blocksToMarkdown(blocks, postId) {
   const lines = [];
+  let imgIndex = 0;
   for (const b of blocks) {
     const t = b.type;
     const data = b[t];
     switch (t) {
+      case "image": {
+        const src = data.type === "external" ? data.external?.url : data.file?.url;
+        if (!src) break;
+        imgIndex += 1;
+        const caption = richToMd(data.caption ?? []);
+        try {
+          const localPath = await saveImage(src, postId, imgIndex);
+          lines.push(`![${caption}](${localPath})`, "");
+        } catch (e) {
+          console.error(`  ⚠ 이미지 #${imgIndex} 건너뜀: ${e.message}`);
+        }
+        break;
+      }
       case "heading_1":
         lines.push("# " + richToMd(data.rich_text), "");
         break;
@@ -110,7 +149,7 @@ function blocksToMarkdown(blocks) {
         lines.push(md, ""); // 빈 문단은 빈 줄로 → 문단 구분
         break;
       }
-      // 이미지·구분선·기타 블록은 텍스트 전용 정책상 건너뜀
+      // 구분선·표·토글 등 그 외 블록은 건너뜀 (현재 미지원)
       default:
         break;
     }
@@ -141,6 +180,7 @@ async function fetchPublishedPages() {
 /* ── 메인 ─────────────────────────────────────────────── */
 
 async function main() {
+  await mkdir(IMG_ROOT, { recursive: true }); // 이미지가 없어도 폴더는 존재
   const pages = await fetchPublishedPages();
   console.log(`· Published 글 ${pages.length}건 발견`);
 
@@ -149,17 +189,21 @@ async function main() {
     const props = page.properties;
     const blocks = await fetchAllBlocks(page.id);
     const slug = getRichText(props, "Slug");
+    const id = slug || page.id.replace(/-/g, "");
     const created = getDate(props, "Date") ?? new Date(page.created_time).getTime();
 
+    // 이 글의 이미지 폴더를 비우고 새로 받는다 (지워진 이미지·인덱스 정리)
+    await rm(resolve(IMG_ROOT, id), { recursive: true, force: true });
+
     posts.push({
-      id: slug || page.id.replace(/-/g, ""),
+      id,
       title: getTitle(props),
       category: getSelect(props, "Category") || "기타",
       pinned: getCheckbox(props, "Pinned"),
       tags: getMultiSelect(props, "Tags"),
       created,
       updated: new Date(page.last_edited_time).getTime(),
-      body: blocksToMarkdown(blocks),
+      body: await blocksToMarkdown(blocks, id),
     });
     console.log(`  ✓ ${getTitle(props)}`);
   }

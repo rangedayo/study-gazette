@@ -352,7 +352,7 @@ function Mermaid({ chart }) {
   return <div className="g-mermaid" dangerouslySetInnerHTML={{ __html: svg }} />;
 }
 
-function Body({ text }) {
+function Body({ text, onImg }) {
   const segs = String(text).split("```");
   return segs.map((seg, si) => {
     if (si % 2 === 1) {
@@ -366,7 +366,17 @@ function Body({ text }) {
       p?.startsWith("`") ? <code key={i} className="g-code">{p.slice(1, -1)}</code> : <span key={i}>{p}</span>);
     lines.forEach((ln, i) => {
       const k = si + "-" + i;
-      if (/^### /.test(ln)) { flush(k); out.push(<h3 key={k} className="g-h3">{inline(ln.slice(4))}</h3>); }
+      if (/^!\[[^\]]*\]\([^)]+\)\s*$/.test(ln)) {
+        flush(k);
+        const [, alt, src] = ln.match(/^!\[([^\]]*)\]\(([^)]+)\)/);
+        out.push(
+          <figure key={k} className="g-fig">
+            <img className="g-img" src={src} alt={alt} loading="lazy" onClick={onImg ? () => onImg(src) : undefined} />
+            {alt ? <figcaption className="g-cap">{alt}</figcaption> : null}
+          </figure>
+        );
+      }
+      else if (/^### /.test(ln)) { flush(k); out.push(<h3 key={k} className="g-h3">{inline(ln.slice(4))}</h3>); }
       else if (/^## /.test(ln)) { flush(k); out.push(<h2 key={k} className="g-h2">{inline(ln.slice(3))}</h2>); }
       else if (/^# /.test(ln)) { flush(k); out.push(<h2 key={k} className="g-h2">{inline(ln.slice(2))}</h2>); }
       else if (/^> /.test(ln)) { flush(k); out.push(<blockquote key={k} className="g-quote">{inline(ln.slice(2))}</blockquote>); }
@@ -553,6 +563,9 @@ export default function StudyGazette() {
     .g-quote{border-left:3px solid ${C.mustard};margin:1.2rem 0;padding:.3rem 0 .3rem 1.1rem;color:${C.ink};font-style:italic;font-family:${FD};font-size:1.16rem}
     .g-code{background:${C.tintM};color:${C.ink};padding:.08em .4em;border-radius:2px;font-size:.9em;font-family:${FM}}
     .g-pre{background:${C.ink};color:${C.bg};padding:1rem;overflow-x:auto;font-size:.85rem;margin:1rem 0;font-family:${FM}}
+    .g-fig{margin:1.7rem 0;text-align:center}
+    .g-img{max-width:100%;height:auto;border:1px solid ${C.frame};border-radius:4px;cursor:zoom-in;box-shadow:0 6px 18px rgba(44,49,58,.12);display:block;margin:0 auto}
+    .g-cap{margin-top:.5rem;font-family:${FM};font-size:.8rem;color:${C.ink};opacity:.7}
     .g-mermaid{margin:1.6rem 0;padding:1.2rem;background:${C.panel};border:1px solid ${C.frame};border-radius:3px;text-align:center;overflow-x:auto}
     .g-mermaid svg{max-width:100%;height:auto}
     .navlink{font-family:${FB};font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:${C.body};padding:.3rem 0;background:none;border:none;position:relative}
@@ -956,7 +969,7 @@ export default function StudyGazette() {
 
             <p style={{ fontSize: ".97rem", color: C.body, lineHeight: 1.85, margin: "0 0 1.8rem" }}>{curProj.summary}</p>
 
-            {curProj.body && <div style={{ fontSize: "1.05rem", marginBottom: "2.4rem" }}><Body text={curProj.body} /></div>}
+            {curProj.body && <div style={{ fontSize: "1.05rem", marginBottom: "2.4rem" }}><Body text={curProj.body} onImg={setLightbox} /></div>}
 
             <div className="eyebrow dbl-bot" style={{ paddingBottom: ".5rem", marginBottom: "1rem" }}>Highlights</div>
             <ul className="g-ul g-bull" style={{ margin: "0 0 2rem" }}>
@@ -1008,7 +1021,7 @@ export default function StudyGazette() {
             </div>
             <h1 style={{ fontFamily: FD, fontWeight: 900, fontSize: "clamp(2rem,5vw,2.9rem)", color: C.ink, lineHeight: 1.12, margin: "0 0 1.4rem" }}>{cur.title}</h1>
             <div className="dbl-top dbl-bot" style={{ height: 260, margin: "0 0 2rem", overflow: "hidden" }}><Art seed={cur.id + "hero"} /></div>
-            <div style={{ fontSize: "1.05rem" }}><Body text={cur.body} /></div>
+            <div style={{ fontSize: "1.05rem" }}><Body text={cur.body} onImg={setLightbox} /></div>
             {(cur.tags || []).length > 0 && (
               <div style={{ marginTop: "2.4rem", paddingTop: "1.1rem", borderTop: `1px solid ${C.rule}` }}>
                 {cur.tags.map((t) => <span key={t} style={{ fontFamily: FM, fontSize: 12, color: C.mute, marginRight: 16 }}>#{t}</span>)}
