@@ -87,7 +87,8 @@ const richToMd = (rich = []) =>
     })
     .join("");
 
-// 한 페이지의 모든 블록을 페이지네이션까지 처리해 가져온다
+// 한 페이지의 모든 블록을 가져온다 (페이지네이션 + 중첩 자식 블록까지 재귀로 평탄화).
+// 불릿 안에 넣은 이미지처럼 자식으로 들어간 블록도 부모 바로 뒤에 이어 붙여 읽기 순서를 보존.
 async function fetchAllBlocks(blockId) {
   const blocks = [];
   let cursor;
@@ -97,7 +98,13 @@ async function fetchAllBlocks(blockId) {
       start_cursor: cursor,
       page_size: 100,
     });
-    blocks.push(...res.results);
+    for (const b of res.results) {
+      blocks.push(b);
+      // 하위 페이지·DB는 별개 문서이므로 파고들지 않는다
+      if (b.has_children && b.type !== "child_page" && b.type !== "child_database") {
+        blocks.push(...(await fetchAllBlocks(b.id)));
+      }
+    }
     cursor = res.has_more ? res.next_cursor : undefined;
   } while (cursor);
   return blocks;
