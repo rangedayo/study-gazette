@@ -11,6 +11,8 @@
 //   #/##/### 제목, **굵게**, `코드`, ``` 코드블록, > 인용, - 목록, 이미지
 // 이미지 블록은 받아서 public/posts/<id>/ 에 저장하고 ![](...) 로 링크한다.
 // (구분선·표·토글 등 그 외 블록은 건너뛴다)
+// 페이지 커버 이미지는 public/posts/<id>/cover.ext 로 저장하고 posts.json 의 thumb 로 넣는다
+// (목록 썸네일·상세 히어로용. 커버가 없으면 사이트가 자동 추상 그림 Art 로 폴백)
 
 import { Client } from "@notionhq/client";
 import { writeFile, mkdir, rm } from "node:fs/promises";
@@ -43,16 +45,27 @@ const extFromUrl = (url) => {
   }
 };
 
-// 이미지를 public/posts/<id>/NN.ext 로 저장하고 사이트용 경로를 돌려준다
-async function saveImage(url, postId, index) {
+// 이미지를 public/posts/<id>/<name> 으로 저장하고 사이트용 경로를 돌려준다
+async function saveImageAs(url, postId, name) {
   const dir = resolve(IMG_ROOT, postId);
   await mkdir(dir, { recursive: true });
-  const name = String(index).padStart(2, "0") + extFromUrl(url);
   const res = await fetch(url);
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   await writeFile(resolve(dir, name), Buffer.from(await res.arrayBuffer()));
   return `/posts/${postId}/${name}`;
 }
+
+// 본문 이미지: NN.ext (읽기 순서대로 번호)
+const saveImage = (url, postId, index) =>
+  saveImageAs(url, postId, String(index).padStart(2, "0") + extFromUrl(url));
+
+// 글 커버(썸네일·히어로용): 고정 이름 cover.ext — 페이지 커버에서 받는다
+const saveCover = (url, postId) =>
+  saveImageAs(url, postId, "cover" + extFromUrl(url));
+
+// page.cover → 다운로드 가능한 URL (업로드 파일/외부 링크 모두 지원, 만료 대비 파일로 보관)
+const coverUrl = (cover) =>
+  !cover ? null : cover.type === "external" ? cover.external?.url : cover.file?.url;
 
 /* ── Notion 속성 읽기 헬퍼 ────────────────────────────── */
 
@@ -202,6 +215,17 @@ async function main() {
     // 이 글의 이미지 폴더를 비우고 새로 받는다 (지워진 이미지·인덱스 정리)
     await rm(resolve(IMG_ROOT, id), { recursive: true, force: true });
 
+    // 페이지 커버 → 목록 썸네일·상세 히어로용 thumb (없으면 사이트가 Art로 폴백)
+    let thumb;
+    const cov = coverUrl(page.cover);
+    if (cov) {
+      try {
+        thumb = await saveCover(cov, id);
+      } catch (e) {
+        console.error(`  ⚠ 커버 이미지 건너뜀: ${e.message}`);
+      }
+    }
+
     posts.push({
       id,
       title: getTitle(props),
@@ -210,6 +234,7 @@ async function main() {
       tags: getMultiSelect(props, "Tags"),
       created,
       updated: new Date(page.last_edited_time).getTime(),
+      ...(thumb ? { thumb } : {}),
       body: await blocksToMarkdown(blocks, id),
     });
     console.log(`  ✓ ${getTitle(props)}`);

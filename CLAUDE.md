@@ -13,6 +13,7 @@
 - **라우팅은 URL 해시 기반**(`#cat:`/`#post:`/`#project:`). `history.state`에 화면 정보를 저장하지 말 것 — App Router가 덮어써서 뒤로가기가 깨진다. 화면 전환은 `goTo`(해시 push)로, 인페이지 뒤로가기는 `goBack`(`history.back`)으로 처리.
 - **본문 마크다운 파서는 자체 구현**(`Body` 함수). 지원: `##` 제목, `**굵게**`, `` `코드` ``, `> 인용`, `- 목록`, **이미지(`![캡션](경로)`)**. 이미지는 캡션과 함께 렌더되고 클릭하면 라이트박스로 원본을 본다(`onImg`→`setLightbox`).
 - **글 이미지 동기화**: Notion 글에 넣은 사진은 `scripts/sync-notion.mjs`가 받아 `public/posts/<글id>/NN.png`로 저장하고 본문에 `![]()`를 삽입한다(Notion URL은 만료되므로 파일로 보관). 워크플로가 `public/posts`도 함께 커밋한다.
+- **글 커버(목록 썸네일·상세 히어로)**: Notion 글 페이지 상단 **커버 이미지**(page cover)를 `sync-notion.mjs`가 받아 `public/posts/<글id>/cover.png`로 저장하고 `posts.json`에 `thumb` 필드로 넣는다. Gazette의 글 카드·Featured·상세 히어로·이전/다음 카드는 `ProjImage`(이미지+`Art` 폴백 공용 컴포넌트)로 `p.thumb`를 꽉 채워(object-fit cover, 상단 정렬) 렌더하고, 커버가 없으면 자동 추상 그림 `Art`로 폴백한다.
 - **프로젝트 스크린샷**: `public/projects/`에 두고 `PROJECT_SHOTS` 맵에서 id별 `thumb`/`shots`/`wide`를 지정(방법 1 — 스크린샷은 코드 관리, 텍스트만 Notion). 카드 썸네일·상세 히어로는 페이퍼 타일(`.proj-shots`)로 렌더하고, 클릭하면 라이트박스로 원본을 본다. 이미지가 없으면 `ProjImage`가 생성 일러스트 `Art`로 자동 폴백.
 - **프로젝트 Notion 동기화**: 프로젝트 텍스트(title/kind/summary/highlights/stack/links/body)는 별도 Notion DB(`프로젝트 (Projects)`, id `933578ac0f354cad99cd9736ba3f2e80`)에서 작성 → `scripts/sync-projects.mjs`가 `data/projects.json` 생성. 본문 머메이드는 Notion 코드블록(언어 `mermaid`)으로 보존. 본문 인라인 이미지는 `public/projects/<id>/`에 저장.
 

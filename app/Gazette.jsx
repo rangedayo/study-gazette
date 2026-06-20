@@ -85,7 +85,7 @@ function Art({ seed }) {
   );
 }
 
-/* 프로젝트 스크린샷 — 파일이 없으면(404 등) Art로 안전하게 폴백 */
+/* 이미지 + Art 폴백 (프로젝트 스크린샷·글 커버 공용) — src가 없거나 404면 Art로 안전하게 폴백 */
 function ProjImage({ src, seed, alt, fit = "cover", pos = "top center" }) {
   const [err, setErr] = useState(false);
   if (!src || err) return <Art seed={seed} />;
@@ -458,7 +458,7 @@ export default function StudyGazette() {
   /* 가로형 목록 아이템 (Front Page / 카테고리 / 검색 결과) */
   const ListItem = ({ p }) => (
     <article className="hov" style={{ display: "grid", gridTemplateColumns: "150px 1fr", gap: "1.5rem", padding: "1.4rem", marginBottom: "1.1rem", border: `1px solid ${C.frame}`, background: C.panel }} onClick={() => open(p.id)}>
-      <div style={{ height: 120, border: `1px solid ${C.frame}`, overflow: "hidden" }}><Art seed={p.id + p.title} /></div>
+      <div style={{ height: 120, border: `1px solid ${C.frame}`, overflow: "hidden" }}><ProjImage src={p.thumb} seed={p.id + p.title} alt={p.title} /></div>
       <div>
         <div className="kicker" style={{ marginBottom: 8 }}>{p.category} · {fmt(p.updated)}</div>
         <h3 className="ttl" style={{ fontFamily: FD, fontWeight: 700, fontSize: "1.34rem", color: C.ink, lineHeight: 1.2, margin: "0 0 .5rem" }}>{p.title}</h3>
@@ -471,7 +471,7 @@ export default function StudyGazette() {
   /* 세로형 카드 (AI 사서 추천 결과) */
   const ResultCard = ({ p }) => (
     <div className="hov" onClick={() => open(p.id)} style={{ background: C.panel, border: `1px solid ${C.frame}`, borderRadius: 2, overflow: "hidden", cursor: "pointer", display: "flex", flexDirection: "column" }}>
-      <div style={{ height: 96, borderBottom: `1px solid ${C.frame}`, overflow: "hidden" }}><Art seed={p.id + p.title} /></div>
+      <div style={{ height: 96, borderBottom: `1px solid ${C.frame}`, overflow: "hidden" }}><ProjImage src={p.thumb} seed={p.id + p.title} alt={p.title} /></div>
       <div style={{ padding: "10px 13px 13px" }}>
         <div className="kicker" style={{ marginBottom: 6, fontSize: 10 }}>{p.category}</div>
         <h3 className="ttl" style={{ fontFamily: FD, fontWeight: 700, fontSize: "1.08rem", color: C.ink, lineHeight: 1.25, margin: "0 0 .4rem" }}>{p.title}</h3>
@@ -547,7 +547,7 @@ export default function StudyGazette() {
               {featured && (
                 <div className="hov" style={{ border: `1px solid ${C.frame}`, background: C.panel, marginBottom: "2.2rem" }} onClick={() => open(featured.id)}>
                   <div style={{ height: 280, borderBottom: `1px solid ${C.frame}`, overflow: "hidden", position: "relative" }}>
-                    <Art seed={featured.id + "feat"} />
+                    <ProjImage src={featured.thumb} seed={featured.id + "feat"} alt={featured.title} />
                     <div style={{ position: "absolute", top: 14, left: 14, background: C.bg, border: `1.5px solid ${C.frame}`, padding: "3px 12px" }} className="eyebrow">Featured Study</div>
                   </div>
                   <div style={{ padding: "1.5rem 1.8rem 1.8rem" }}>
@@ -809,7 +809,7 @@ export default function StudyGazette() {
               {"  ·  " + fmt(cur.created) + "  ·  " + readMin(cur.body)}
             </div>
             <h1 style={{ fontFamily: FD, fontWeight: 900, fontSize: "clamp(2rem,5vw,2.9rem)", color: C.ink, lineHeight: 1.12, margin: "0 0 1.4rem" }}>{cur.title}</h1>
-            <div className="dbl-top dbl-bot" style={{ height: 260, margin: "0 0 2rem", overflow: "hidden" }}><Art seed={cur.id + "hero"} /></div>
+            <div className="dbl-top dbl-bot" style={{ height: 260, margin: "0 0 2rem", overflow: "hidden" }}><ProjImage src={cur.thumb} seed={cur.id + "hero"} alt={cur.title} /></div>
             <div style={{ fontSize: "1.05rem" }}><Body text={cur.body} onImg={setLightbox} /></div>
             {(cur.tags || []).length > 0 && (
               <div style={{ marginTop: "2.4rem", paddingTop: "1.1rem", borderTop: `1px solid ${C.rule}` }}>
@@ -825,7 +825,7 @@ export default function StudyGazette() {
                       <div key={p.id} className="pn-card" onClick={() => open(p.id)}>
                         <span className="pn-bar" />
                         <div className="pn-body">
-                          <div style={{ height: 120, borderBottom: `1px solid ${C.frame}`, overflow: "hidden" }}><Art seed={p.id + p.title} /></div>
+                          <div style={{ height: 120, borderBottom: `1px solid ${C.frame}`, overflow: "hidden" }}><ProjImage src={p.thumb} seed={p.id + p.title} alt={p.title} /></div>
                           <div style={{ padding: "11px 13px 13px" }}>
                             <div className="kicker" style={{ marginBottom: 6, fontSize: 10, color: C.brick }}>{dir}</div>
                             <h3 className="ttl" style={{ fontFamily: FD, fontWeight: 700, fontSize: "1.04rem", color: C.ink, lineHeight: 1.25, margin: 0 }}>{p.title}</h3>
