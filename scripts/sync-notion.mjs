@@ -197,8 +197,10 @@ async function blocksToMarkdown(blocks, postId) {
       }
       case "paragraph": {
         const md = richToMd(data.rich_text);
-        // 빈 문단(엔터)은 빈 줄 1개로 보존 → 연속 엔터가 그대로 간격이 된다
-        lines.push(md ? ind + md : "");
+        // 빈 문단(엔터)도 깊이만큼 들여써서 보존 → 리스트/토글 안의 빈 줄이
+        // 부모 밖으로 새어나가 다음 블록을 자식으로 삼키지 않게 한다.
+        // (depth 0이면 ind=""이라 최상위 빈 줄은 그대로 빈 줄)
+        lines.push(md ? ind + md : ind);
         break;
       }
       // 그 외 블록(표 등)은 건너뜀 (현재 미지원)

@@ -156,7 +156,7 @@ const classifyLine = (raw) => {
   const m = raw.match(/^([ \t]*)(.*)$/);
   const depth = Math.floor(m[1].replace(/\t/g, "  ").length / 2);
   const s = m[2];
-  if (s.trim() === "") return { kind: "blank", depth: 0, text: "" };
+  if (s.trim() === "") return { kind: "blank", depth, text: "" };
   if (/^!\[[^\]]*\]\([^)]+\)\s*$/.test(s)) return { kind: "img", depth, text: s };
   if (/^### /.test(s)) return { kind: "h3", depth, text: s.slice(4) };
   if (/^## /.test(s)) return { kind: "h2", depth, text: s.slice(3) };
@@ -177,9 +177,13 @@ const buildTree = (items, start, depth) => {
     if (items[i].depth < depth) break;
     const node = { ...items[i], depth, children: [] };
     let j = i + 1;
-    const childStart = j;
-    while (j < items.length && items[j].depth > depth) j++;
-    if (j > childStart) node.children = buildTree(items, childStart, depth + 1);
+    // 빈 줄은 단순 구분자 — 뒤따르는 더 깊은 줄을 자식으로 삼키지 않는다
+    // (삼키면 렌더 시 빈 줄의 자식이 통째로 버려져 내용이 누락됨)
+    if (items[i].kind !== "blank") {
+      const childStart = j;
+      while (j < items.length && items[j].depth > depth) j++;
+      if (j > childStart) node.children = buildTree(items, childStart, depth + 1);
+    }
     nodes.push(node);
     i = j;
   }
@@ -274,12 +278,12 @@ function Body({ text, onImg }) {
     }
     items.push(classifyLine(rawLines[i]));
   }
-  // 깊이가 한 번에 1단계 넘게 건너뛰지 않도록 정규화 (빈 줄은 영향 없음)
+  // 깊이가 한 번에 1단계 넘게 건너뛰지 않도록 정규화. 빈 줄도 클램프하되
+  // prev(직전 깊이)는 비-빈줄에서만 갱신 — 빈 줄이 깊이 흐름을 흔들지 않게.
   let prev = 0;
   for (const it of items) {
-    if (it.kind === "blank") continue;
     if (it.depth > prev + 1) it.depth = prev + 1;
-    prev = it.depth;
+    if (it.kind !== "blank") prev = it.depth;
   }
   return <>{renderNodes(buildTree(items, 0, 0))}</>;
 }
