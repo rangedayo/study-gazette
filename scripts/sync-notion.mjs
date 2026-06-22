@@ -95,6 +95,7 @@ const richToMd = (rich = []) =>
       let s = t.plain_text;
       const a = t.annotations ?? {};
       if (a.code) s = "`" + s + "`";
+      if (a.italic) s = "*" + s + "*";
       if (a.bold) s = "**" + s + "**";
       return s;
     })
@@ -131,11 +132,16 @@ async function blocksToMarkdown(blocks, postId) {
   // 숫자 목록은 깊이별로 연속 카운트를 매겨 1·2·3…을 살린다.
   const numCount = {}; // depth -> 현재 번호
   const resetNum = (depth) => { for (const d in numCount) if (+d >= depth) delete numCount[d]; };
+  // 직전 "목록 항목"의 깊이(없으면 null) — 바로 뒤 이미지의 들여쓰기 판단용.
+  let prevListDepth = null;
 
   for (const b of blocks) {
     const t = b.type;
     const data = b[t];
-    const depth = b._depth || 0;
+    let depth = b._depth || 0;
+    // 노션에선 형제(top-level)지만 바로 위 목록 항목 바로 뒤(빈 줄 없이)에 온 이미지는
+    // 그 항목에 속한 것으로 보고 한 단계 들여쓴다 → 웹에서 불릿 자식으로 렌더된다.
+    if (t === "image" && prevListDepth === depth) depth += 1;
     const ind = "  ".repeat(depth); // 중첩 1단계 = 공백 2칸 (Body 파서와 약속)
     // 숫자 목록이 아닌 블록을 만나면 그 깊이 이후의 번호 카운트를 초기화.
     // 단, 빈 문단(엔터)은 항목 사이 간격일 뿐이므로 번호를 리셋하지 않는다
@@ -207,6 +213,10 @@ async function blocksToMarkdown(blocks, postId) {
       default:
         break;
     }
+    // 다음 이미지 들여쓰기 판단: 목록 항목이면 깊이 기억, 이미지는 연결 유지(연속 이미지도 자식),
+    // 그 외(빈 문단·헤딩 등)를 만나면 연결 끊김.
+    if (t === "bulleted_list_item" || t === "numbered_list_item") prevListDepth = b._depth || 0;
+    else if (t !== "image") prevListDepth = null;
   }
   // 과한 공백만 정리: 빈 줄 최대 6개까지 보존(연속 엔터를 더 충실히 반영)
   return lines.join("\n").replace(/\n{8,}/g, "\n\n\n\n\n\n\n").trim();

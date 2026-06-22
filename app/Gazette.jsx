@@ -141,12 +141,14 @@ function Mermaid({ chart }) {
   return <div className="g-mermaid" dangerouslySetInnerHTML={{ __html: svg }} />;
 }
 
-/* 인라인 마크다운(**굵게**·`코드`) → React 노드 */
+/* 인라인 마크다운(***굵은이태릭***·**굵게**·*이태릭*·`코드`) → React 노드 */
 const inlineMd = (s) =>
   String(s)
-    .split(/(\*\*[^*]+\*\*|`[^`]+`)/g)
+    .split(/(\*\*\*[^*]+\*\*\*|\*\*[^*]+\*\*|\*[^*]+\*|`[^`]+`)/g)
     .map((p, i) =>
+      p?.startsWith("***") ? <strong key={i}><em>{p.slice(3, -3)}</em></strong> :
       p?.startsWith("**") ? <strong key={i}>{p.slice(2, -2)}</strong> :
+      p?.startsWith("*") ? <em key={i}>{p.slice(1, -1)}</em> :
       p?.startsWith("`") ? <code key={i} className="g-code">{p.slice(1, -1)}</code> :
       <span key={i}>{p}</span>
     );
@@ -937,8 +939,7 @@ export default function StudyGazette() {
               <button onClick={() => goTo({ name: "cat", value: cur.category })} style={{ background: "none", border: "none", padding: 0, fontFamily: FM, letterSpacing: ".12em", textTransform: "uppercase", fontSize: 11, color: C.brick, cursor: "pointer" }}>{cur.category}</button>
               {"  ·  " + fmt(cur.created) + "  ·  " + readMin(cur.body)}
             </div>
-            <h1 style={{ fontFamily: FD, fontWeight: 900, fontSize: "clamp(2rem,5vw,2.9rem)", color: C.ink, lineHeight: 1.12, margin: "0 0 1.4rem" }}>{cur.title}</h1>
-            <div className="dbl-top dbl-bot" style={{ height: 260, margin: "0 0 2rem", overflow: "hidden" }}><ProjImage src={cur.thumb} seed={cur.id + "hero"} alt={cur.title} /></div>
+            <h1 className="dbl-bot" style={{ fontFamily: FD, fontWeight: 900, fontSize: "clamp(2rem,5vw,2.9rem)", color: C.ink, lineHeight: 1.12, margin: "0 0 1.6rem", paddingBottom: "1rem" }}>{cur.title}</h1>
             <div style={{ fontSize: "1.05rem" }}><Body text={cur.body} onImg={setLightbox} /></div>
             {(cur.tags || []).length > 0 && (
               <div style={{ marginTop: "2.4rem", paddingTop: "1.1rem", borderTop: `1px solid ${C.rule}` }}>
