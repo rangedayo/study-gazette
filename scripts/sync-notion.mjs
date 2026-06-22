@@ -134,10 +134,38 @@ async function blocksToMarkdown(blocks, postId) {
   const resetNum = (depth) => { for (const d in numCount) if (+d >= depth) delete numCount[d]; };
   // 직전 "목록 항목"의 깊이(없으면 null) — 바로 뒤 이미지의 들여쓰기 판단용.
   let prevListDepth = null;
+  // 표: table 블록을 만나면 모으기 시작하고, 뒤따르는 table_row를 셀로 쌓다가
+  // 표가 끝나면(다른 블록을 만나거나 글 끝) 마크다운 표로 한꺼번에 flush 한다.
+  let tableBuf = null; // { depth, hasHeader, rows: string[][] }
+  const flushTable = () => {
+    if (!tableBuf) return;
+    const { depth, hasHeader, rows } = tableBuf;
+    tableBuf = null;
+    if (!rows.length) return;
+    const tind = "  ".repeat(depth);
+    const width = Math.max(...rows.map((r) => r.length));
+    const esc = (c) => String(c).replace(/\|/g, "\\|").replace(/\n+/g, " ").trim();
+    const toRow = (cells) => {
+      const c = cells.slice();
+      while (c.length < width) c.push("");
+      return tind + "| " + c.map(esc).join(" | ") + " |";
+    };
+    const sep = tind + "| " + Array(width).fill("---").join(" | ") + " |";
+    // 헤더 있으면 첫 행을 헤더로, 없으면 빈 헤더행을 넣어 마크다운 표 형식을 맞춘다.
+    if (hasHeader) {
+      lines.push(toRow(rows[0]), sep);
+      for (let r = 1; r < rows.length; r++) lines.push(toRow(rows[r]));
+    } else {
+      lines.push(tind + "| " + Array(width).fill(" ").join(" | ") + " |", sep);
+      for (const r of rows) lines.push(toRow(r));
+    }
+  };
 
   for (const b of blocks) {
     const t = b.type;
     const data = b[t];
+    // table_row가 아닌 블록을 만나면 진행 중이던 표를 마감한다.
+    if (t !== "table_row" && tableBuf) flushTable();
     let depth = b._depth || 0;
     // 노션에선 형제(top-level)지만 바로 위 목록 항목 바로 뒤(빈 줄 없이)에 온 이미지는
     // 그 항목에 속한 것으로 보고 한 단계 들여쓴다 → 웹에서 불릿 자식으로 렌더된다.
@@ -209,7 +237,15 @@ async function blocksToMarkdown(blocks, postId) {
         lines.push(md ? ind + md : ind);
         break;
       }
-      // 그 외 블록(표 등)은 건너뜀 (현재 미지원)
+      case "table":
+        // 표 시작: 헤더 여부와 깊이만 기억하고, 셀은 뒤따르는 table_row에서 채운다.
+        tableBuf = { depth, hasHeader: !!data.has_column_header, rows: [] };
+        break;
+      case "table_row":
+        // 각 셀(rich_text 배열)을 인라인 마크다운으로 변환해 행에 쌓는다.
+        if (tableBuf) tableBuf.rows.push((data.cells ?? []).map((cell) => richToMd(cell)));
+        break;
+      // 그 외 블록은 건너뜀 (현재 미지원)
       default:
         break;
     }
@@ -218,6 +254,7 @@ async function blocksToMarkdown(blocks, postId) {
     if (t === "bulleted_list_item" || t === "numbered_list_item") prevListDepth = b._depth || 0;
     else if (t !== "image") prevListDepth = null;
   }
+  flushTable(); // 글 끝에서 진행 중이던 표 마감
   // 과한 공백만 정리: 빈 줄 최대 6개까지 보존(연속 엔터를 더 충실히 반영)
   return lines.join("\n").replace(/\n{8,}/g, "\n\n\n\n\n\n\n").trim();
 }

@@ -208,6 +208,23 @@ function Body({ text, onImg }) {
         </figure>
       );
     }
+    if (n.kind === "table") {
+      const hasHead = (n.header || []).some((c) => c.trim() !== "");
+      return (
+        <div key={k} className="g-table-wrap">
+          <table className="g-table">
+            {hasHead ? (
+              <thead><tr>{n.header.map((c, ci) => <th key={ci}>{inlineMd(c)}</th>)}</tr></thead>
+            ) : null}
+            <tbody>
+              {n.rows.map((row, ri) => (
+                <tr key={ri}>{row.map((c, ci) => <td key={ci}>{inlineMd(c)}</td>)}</tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      );
+    }
     if (n.kind === "h3") return <h3 key={k} className="g-h3">{inlineMd(n.text)}</h3>;
     if (n.kind === "h2") return <h2 key={k} className="g-h2">{inlineMd(n.text)}</h2>;
     if (n.kind === "quote") return <blockquote key={k} className="g-quote">{inlineMd(n.text)}</blockquote>;
@@ -276,6 +293,23 @@ function Body({ text, onImg }) {
         i++;
       }
       items.push({ kind: lang === "mermaid" ? "mermaid" : "code", depth, text: buf.join("\n"), lang });
+      continue;
+    }
+    // 표: 헤더행( |..|..| ) + 구분행( |---|---| ) + 본문행들을 하나의 table 아이템으로 묶는다
+    const isPipe = (l) => l != null && /^[ \t]*\|.*\|[ \t]*$/.test(l);
+    const isSep = (l) => l != null && /^[ \t]*\|[ \t:|-]+\|[ \t]*$/.test(l);
+    if (isPipe(rawLines[i]) && !isSep(rawLines[i]) && isSep(rawLines[i + 1])) {
+      const indent = (rawLines[i].match(/^[ \t]*/)[0]).replace(/\t/g, "  ");
+      const depth = Math.floor(indent.length / 2);
+      const cells = (l) =>
+        l.trim().replace(/^\|/, "").replace(/\|$/, "")
+          .split(/(?<!\\)\|/).map((c) => c.trim().replace(/\\\|/g, "|"));
+      const header = cells(rawLines[i]);
+      const rows = [];
+      i += 2; // 헤더·구분행 건너뜀
+      while (isPipe(rawLines[i])) { rows.push(cells(rawLines[i])); i++; }
+      i--; // for 루프의 i++ 보정
+      items.push({ kind: "table", depth, header, rows });
       continue;
     }
     items.push(classifyLine(rawLines[i]));
@@ -487,6 +521,11 @@ export default function StudyGazette() {
     .g-img{max-width:100%;height:auto;border:1px solid ${C.frame};border-radius:4px;cursor:zoom-in;box-shadow:0 6px 18px rgba(44,49,58,.12);display:block;margin:0 auto}
     .g-cap{margin-top:.5rem;font-family:${FM};font-size:.8rem;color:${C.ink};opacity:.7}
     .g-mermaid{margin:1.6rem 0;padding:1.2rem;background:${C.panel};border:1px solid ${C.frame};border-radius:3px;text-align:center;overflow-x:auto}
+    .g-table-wrap{margin:1.5rem 0;overflow-x:auto;border:1px solid ${C.frame};border-radius:3px}
+    .g-table{border-collapse:collapse;width:100%;font-family:${FB};font-size:.92rem;color:${C.body}}
+    .g-table th,.g-table td{border:1px solid ${C.frame};padding:.5rem .75rem;text-align:left;vertical-align:top;line-height:1.6}
+    .g-table th{background:${C.panel};color:${C.ink};font-family:${FD};font-weight:700;white-space:nowrap}
+    .g-table tbody tr:nth-child(even) td{background:rgba(44,49,58,.025)}
     .g-mermaid svg{max-width:100%;height:auto}
     .navlink{font-family:${FB};font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:${C.body};padding:.3rem 0;background:none;border:none;position:relative}
     .navlink:hover{color:${C.ink}} .navlink.on{color:${C.ink}}
