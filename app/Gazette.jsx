@@ -191,6 +191,8 @@ function Body({ text, onImg }) {
 
   const renderLeaf = (n) => {
     const k = "L" + uid++;
+    if (n.kind === "mermaid") return <Mermaid key={k} chart={n.text} />;
+    if (n.kind === "code") return <pre key={k} className="g-pre">{n.text}</pre>;
     if (n.kind === "img") {
       const [, alt, src] = n.text.match(/^!\[([^\]]*)\]\(([^)]+)\)/);
       return (
@@ -238,8 +240,8 @@ function Body({ text, onImg }) {
       if (n.kind === "blank") {
         let c = 0;
         while (i < nodes.length && nodes[i].kind === "blank") { c++; i++; }
-        const extra = Math.min(c - 1, 3);
-        if (extra > 0) out.push(<div key={"g" + uid++} className="g-gap" style={{ height: extra * 0.9 + "rem" }} />);
+        const extra = Math.min(c - 1, 6);
+        if (extra > 0) out.push(<div key={"g" + uid++} className="g-gap" style={{ height: extra * 1.3 + "rem" }} />);
         continue;
       }
       // 그 외(제목·인용·이미지·문단) + 들여쓴 자식은 g-sub로 들여쓰기
@@ -250,26 +252,39 @@ function Body({ text, onImg }) {
     return out;
   };
 
-  const segs = String(text).split("```");
-  return segs.map((seg, si) => {
-    if (si % 2 === 1) {
-      if (/^mermaid\s/.test(seg)) return <Mermaid key={si} chart={seg.replace(/^mermaid\n/, "")} />;
-      return <pre key={si} className="g-pre">{seg.replace(/^\w*\n/, "")}</pre>;
+  // 줄 단위 렉싱: 코드펜스(들여쓰기 포함)를 하나의 code/mermaid 아이템으로 묶어
+  // 토글·목록 안의 코드도 트리 자식으로 들어가게 한다(전역 ``` 분리 대신).
+  const rawLines = String(text).split("\n");
+  const items = [];
+  for (let i = 0; i < rawLines.length; i++) {
+    const fence = rawLines[i].match(/^([ \t]*)```(.*)$/);
+    if (fence) {
+      const indent = fence[1].replace(/\t/g, "  ");
+      const depth = Math.floor(indent.length / 2);
+      const lang = fence[2].trim();
+      const buf = [];
+      i++;
+      while (i < rawLines.length && !/^[ \t]*```\s*$/.test(rawLines[i])) {
+        const r = rawLines[i];
+        buf.push(r.startsWith(indent) ? r.slice(indent.length) : r.replace(/^[ \t]+/, ""));
+        i++;
+      }
+      items.push({ kind: lang === "mermaid" ? "mermaid" : "code", depth, text: buf.join("\n"), lang });
+      continue;
     }
-    if (seg === "") return null;
-    const items = seg.split("\n").map(classifyLine);
-    // 깊이가 한 번에 1단계 넘게 건너뛰지 않도록 정규화 (빈 줄은 영향 없음)
-    let prev = 0;
-    for (const it of items) {
-      if (it.kind === "blank") continue;
-      if (it.depth > prev + 1) it.depth = prev + 1;
-      prev = it.depth;
-    }
-    return <div key={si}>{renderNodes(buildTree(items, 0, 0))}</div>;
-  });
+    items.push(classifyLine(rawLines[i]));
+  }
+  // 깊이가 한 번에 1단계 넘게 건너뛰지 않도록 정규화 (빈 줄은 영향 없음)
+  let prev = 0;
+  for (const it of items) {
+    if (it.kind === "blank") continue;
+    if (it.depth > prev + 1) it.depth = prev + 1;
+    prev = it.depth;
+  }
+  return <>{renderNodes(buildTree(items, 0, 0))}</>;
 }
 
-const clean = (b) => String(b).replace(/```[\s\S]*?```/g, " ").replace(/[#>*`\[\]]/g, "").replace(/\s+/g, " ").trim();
+const clean = (b) => String(b).replace(/```[\s\S]*?```/g, " ").replace(/[#>*`\[\]▸•]/g, "").replace(/\s+/g, " ").trim();
 const fmt = (t) => new Date(t).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 const readMin = (b) => Math.max(1, Math.round(clean(b).length / 350)) + " min read";
 
@@ -438,7 +453,7 @@ export default function StudyGazette() {
     .g-p{margin:.7rem 0;line-height:1.85;font-size:.97rem;color:${C.body}}
     .g-ul{margin:.6rem 0 1rem;padding:0;list-style:none}
     .g-ul li{position:relative;padding-left:1.3rem;margin:.4rem 0;line-height:1.7;font-size:.97rem;color:${C.body}}
-    .g-ul li:before{content:"§";position:absolute;left:0;color:${C.mustard};font-weight:700}
+    .g-ul li:before{content:"•";position:absolute;left:0;color:${C.mustard};font-weight:700}
     .g-bull li:before{content:"•"}
     .g-ol{margin:.6rem 0 1rem;padding-left:1.55rem;list-style:decimal}
     .g-ol li{margin:.4rem 0;line-height:1.7;padding-left:.2rem;font-size:.97rem;color:${C.body}}

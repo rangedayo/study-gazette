@@ -183,9 +183,13 @@ async function blocksToMarkdown(blocks, postId) {
         lines.push("---");
         break;
       case "code": {
-        // 코드펜스는 들여쓰지 않는다(파서의 ``` 분리와 충돌 방지)
+        // 코드펜스도 깊이만큼 들여쓴다 → 토글·목록 안의 코드가 자식으로 보존됨.
+        // 내용은 마크다운 가공 없이 원문(plain_text) 그대로, 각 줄에 들여쓰기 부여.
         const lang = data.language && data.language !== "plain text" ? data.language : "";
-        lines.push("```" + lang, richToMd(data.rich_text), "```");
+        const code = (data.rich_text ?? []).map((t) => t.plain_text).join("");
+        lines.push(ind + "```" + lang);
+        for (const cl of code.split("\n")) lines.push(ind + cl);
+        lines.push(ind + "```");
         break;
       }
       case "paragraph": {
@@ -199,8 +203,8 @@ async function blocksToMarkdown(blocks, postId) {
         break;
     }
   }
-  // 과한 공백만 정리: 빈 줄 3개까지 허용
-  return lines.join("\n").replace(/\n{5,}/g, "\n\n\n\n").trim();
+  // 과한 공백만 정리: 빈 줄 최대 6개까지 보존(연속 엔터를 더 충실히 반영)
+  return lines.join("\n").replace(/\n{8,}/g, "\n\n\n\n\n\n\n").trim();
 }
 
 /* ── DB 쿼리 (Published == true 만, Date 내림차순) ─────── */
