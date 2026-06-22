@@ -164,8 +164,8 @@ const classifyLine = (raw) => {
   if (/^> /.test(s)) return { kind: "quote", depth, text: s.slice(2) };
   if (/^▸ /.test(s)) return { kind: "toggle", depth, text: s.slice(2) };
   if (/^- /.test(s)) return { kind: "li", depth, text: s.slice(2) };
-  const om = s.match(/^\d+\.\s+(.*)$/);
-  if (om) return { kind: "oli", depth, text: om[1] };
+  const om = s.match(/^(\d+)\.\s+(.*)$/);
+  if (om) return { kind: "oli", depth, text: om[2], num: parseInt(om[1], 10) };
   return { kind: "p", depth, text: s };
 };
 
@@ -222,7 +222,7 @@ function Body({ text, onImg }) {
           <li key={"i" + uid++}>{inlineMd(g.text)}{g.children.length ? renderNodes(g.children) : null}</li>
         ));
         out.push(ordered
-          ? <ol key={"o" + uid++} className="g-ol">{items}</ol>
+          ? <ol key={"o" + uid++} className="g-ol" start={group[0].num || 1}>{items}</ol>
           : <ul key={"u" + uid++} className="g-ul">{items}</ul>);
         continue;
       }
@@ -236,12 +236,12 @@ function Body({ text, onImg }) {
         );
         i++; continue;
       }
-      // 연속 빈 줄: 2줄 이상이면 그만큼 추가 간격
+      // 빈 줄: 노션의 빈 문단(엔터)을 실제 간격으로 보존 → 1줄도 보이게, 연속이면 그만큼
       if (n.kind === "blank") {
         let c = 0;
         while (i < nodes.length && nodes[i].kind === "blank") { c++; i++; }
-        const extra = Math.min(c - 1, 6);
-        if (extra > 0) out.push(<div key={"g" + uid++} className="g-gap" style={{ height: extra * 1.3 + "rem" }} />);
+        const h = Math.min(c, 6) * 1.05;
+        out.push(<div key={"g" + uid++} className="g-gap" style={{ height: h + "rem" }} />);
         continue;
       }
       // 그 외(제목·인용·이미지·문단) + 들여쓴 자식은 g-sub로 들여쓰기
@@ -452,12 +452,12 @@ export default function StudyGazette() {
     .g-h3{font-family:${FD};font-weight:700;font-size:1.2rem;color:${C.ink};margin:1.4rem 0 .4rem}
     .g-p{margin:.7rem 0;line-height:1.85;font-size:.97rem;color:${C.body}}
     .g-ul{margin:.6rem 0 1rem;padding:0;list-style:none}
-    .g-ul li{position:relative;padding-left:1.3rem;margin:.4rem 0;line-height:1.7;font-size:.97rem;color:${C.body}}
-    .g-ul li:before{content:"•";position:absolute;left:0;color:${C.mustard};font-weight:700}
-    .g-bull li:before{content:"•"}
+    .g-ul>li{position:relative;padding-left:1.3rem;margin:.4rem 0;line-height:1.7;font-size:.97rem;color:${C.body}}
+    .g-ul>li:before{content:"•";position:absolute;left:0;color:${C.mustard};font-weight:700}
+    .g-bull>li:before{content:"•"}
     .g-ol{margin:.6rem 0 1rem;padding-left:1.55rem;list-style:decimal}
-    .g-ol li{margin:.4rem 0;line-height:1.7;padding-left:.2rem;font-size:.97rem;color:${C.body}}
-    .g-ol li::marker{color:${C.mustard};font-weight:700}
+    .g-ol>li{margin:.4rem 0;line-height:1.7;padding-left:.2rem;font-size:.97rem;color:${C.body}}
+    .g-ol>li::marker{color:${C.mustard};font-weight:700}
     .g-ul .g-ul,.g-ul .g-ol,.g-ol .g-ul,.g-ol .g-ol{margin:.3rem 0 .35rem}
     .g-sub{margin-left:1.3rem}
     .g-toggle{margin:.7rem 0;border-left:2px solid ${C.frame};padding:.05rem 0 .05rem .75rem}

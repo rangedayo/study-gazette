@@ -137,8 +137,11 @@ async function blocksToMarkdown(blocks, postId) {
     const data = b[t];
     const depth = b._depth || 0;
     const ind = "  ".repeat(depth); // 중첩 1단계 = 공백 2칸 (Body 파서와 약속)
-    // 숫자 목록이 아닌 블록을 만나면 그 깊이 이후의 번호 카운트를 초기화
-    if (t !== "numbered_list_item") resetNum(depth);
+    // 숫자 목록이 아닌 블록을 만나면 그 깊이 이후의 번호 카운트를 초기화.
+    // 단, 빈 문단(엔터)은 항목 사이 간격일 뿐이므로 번호를 리셋하지 않는다
+    // (노션처럼 빈 줄로 떨어진 항목도 1·2·3…이 이어지게).
+    const isEmptyPara = t === "paragraph" && !(data.rich_text ?? []).some((r) => r.plain_text.trim());
+    if (t !== "numbered_list_item" && !isEmptyPara) resetNum(depth);
 
     switch (t) {
       case "image": {
