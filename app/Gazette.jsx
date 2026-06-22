@@ -285,6 +285,14 @@ function Body({ text, onImg }) {
     if (it.depth > prev + 1) it.depth = prev + 1;
     if (it.kind !== "blank") prev = it.depth;
   }
+  // 빈 줄의 깊이를 "다음 실제 내용"의 깊이로 맞춘다. 노션이 항목 사이 빈 문단을
+  // 얕은 깊이(0)로 줘도, 빈 줄이 부모를 조기에 닫아 뒤 내용을 밖으로 빼지 않게.
+  for (let k = 0; k < items.length; k++) {
+    if (items[k].kind !== "blank") continue;
+    let n = k + 1;
+    while (n < items.length && items[n].kind === "blank") n++;
+    items[k].depth = n < items.length ? items[n].depth : 0;
+  }
   return <>{renderNodes(buildTree(items, 0, 0))}</>;
 }
 
