@@ -663,7 +663,7 @@ export default function StudyGazette() {
 
       {/* ── 마스트헤드 (신문 제호 + 검색창) ── */}
       <header className="masthead dbl-bot" style={{ textAlign: "center", padding: "2.4rem 1.5rem 1.6rem" }}>
-        <div className="kicker" style={{ marginBottom: ".9rem" }}>Est. 2026 — A Study Journal &amp; Portfolio</div>
+        <div className="kicker" style={{ marginBottom: ".9rem" }}>Est. 2026 — Study Notes &amp; Portfolio</div>
         <h1 onClick={goHome} style={{ fontFamily: FD, fontWeight: 900, fontSize: "clamp(2.6rem,7vw,4.6rem)", color: C.ink, margin: 0, letterSpacing: "-.01em", lineHeight: .98, cursor: "pointer" }}>The Study Gazette</h1>
         <div style={{ fontFamily: FD, fontStyle: "italic", fontSize: "1.05rem", color: C.brick, marginTop: ".7rem" }}>Papers, projects &amp; half-formed theories</div>
 
@@ -707,8 +707,8 @@ export default function StudyGazette() {
       <nav className="dbl-bot" style={{ position: "sticky", top: 0, zIndex: 20, background: C.bg }}>
         <div style={{ maxWidth: 1060, margin: "0 auto", padding: "0 1.5rem", display: "flex", alignItems: "center", gap: "1.8rem", height: 50 }}>
           <button className={"navlink" + (route.name === "home" ? " on" : "")} onClick={goHome}>Front Page</button>
-          <button className={"navlink" + (route.name === "about" ? " on" : "")} onClick={() => goto("about")}>About</button>
-          <button className={"navlink" + (route.name === "archive" ? " on" : "")} onClick={() => goto("archive")}>Ask the Archivist</button>
+          <button className={"navlink" + (route.name === "about" ? " on" : "")} onClick={() => goto("about")}>Profile</button>
+          <button className={"navlink" + (route.name === "archive" ? " on" : "")} onClick={() => goto("archive")}>AI Search</button>
           <button className={"navlink" + (route.name === "projects" ? " on" : "")} onClick={() => goto("projects")}>Projects</button>
           <span className="kicker hide-sm" style={{ marginLeft: "auto" }}>{posts.length} entries on file</span>
         </div>
@@ -744,10 +744,10 @@ export default function StudyGazette() {
 
             <aside className="hide-sm">
               <div id="about" style={{ marginBottom: "2.4rem" }}>
-                <div className="eyebrow dbl-bot" style={{ paddingBottom: ".5rem", marginBottom: "1rem" }}>About the Editor</div>
+                <div className="eyebrow dbl-bot" style={{ paddingBottom: ".5rem", marginBottom: "1rem" }}>The Editor</div>
                 <div style={{ aspectRatio: "1 / 1", border: `1px solid ${C.frame}`, overflow: "hidden", marginBottom: "1rem", filter: "grayscale(.12)" }}><img src="/profile.jpg" alt="최사랑" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 30%" }} /></div>
                 <p style={{ fontSize: ".87rem", lineHeight: 1.8, color: C.body, margin: 0 }}>
-                  MLOps와 머신러닝 시스템을 공부하고 기록합니다. 읽은 논문, 만든 파이프라인, 정리한 개념을 한데 모은 작업실. 포트폴리오이자 공부 노트.
+                  AI 엔지니어링을 공부하며 남기는 기록장입니다. 논문 읽다 막힌 부분, 직접 만들어본 파이프라인, 헷갈리던 개념을 그때그때 담아두는 개인적인 공간이에요.
                 </p>
                 <button onClick={() => goto("about")} className="readmore" style={{ marginTop: "1rem", background: "none", border: "none", padding: 0, fontFamily: FB, fontSize: 12, letterSpacing: ".1em", color: C.brick, textTransform: "uppercase", fontWeight: 600, borderBottom: `1.5px solid ${C.brick}`, cursor: "pointer" }}>Read more →</button>
               </div>
@@ -770,7 +770,7 @@ export default function StudyGazette() {
         {route.name === "about" && (
           <article style={{ maxWidth: 720, margin: "0 auto", padding: "2.8rem 0 4rem" }}>
             <button onClick={goHome} className="eyebrow" style={{ background: "none", border: "none", padding: 0, marginBottom: "1.8rem" }}>← Back to front page</button>
-            <div className="eyebrow" style={{ marginBottom: "1rem" }}>About the Editor</div>
+            <div className="eyebrow" style={{ marginBottom: "1rem" }}>The Editor</div>
             <h1 style={{ fontFamily: FD, fontWeight: 900, fontSize: "clamp(2rem,5vw,2.9rem)", color: C.ink, lineHeight: 1.1, margin: "0 0 .6rem" }}>최사랑</h1>
             <p style={{ fontFamily: FD, fontStyle: "italic", fontSize: "1.1rem", color: C.brick, margin: "0 0 1.8rem" }}>Editor · MLOps &amp; ML Systems</p>
 
@@ -781,8 +781,10 @@ export default function StudyGazette() {
                 완성된 결론보다 ‘이해해가는 과정’을 남기는 데 의미를 둡니다.
               </p>
 
-              <h2 className="g-h2">이 저널에 대하여</h2>
-              <p className="g-p">The Study Gazette는 제가 공부하며 정리한 머신러닝 시스템과 MLOps 지식을 모아두는 작업실입니다. 읽은 논문, 직접 구성한 파이프라인, 한 번에 와닿지 않았던 개념을 다시 제 언어로 풀어 쓴 기록들이 이곳에 쌓입니다. 누군가에게 보여주기 위한 글이기 이전에, 미래의 제가 다시 꺼내 읽을 노트입니다.</p>
+              <p className="g-p">비전공자로 출발해 AI 엔지니어링을 공부하며 AI 엔지니어로의 커리어 전환을 준비하고 있습니다. 매일 논문과 개념을 하나씩 제 것으로 만들며 기초부터 차근차근 과정을 밟아가고 있습니다. 화려한 모델을 좇기보다, 평가셋과 정량적 측정을 통해 시스템의 동작을 끝까지 검증하고 통제하는 방식을 지향합니다.</p>
+
+              <h2 className="g-h2">기록에 대하여</h2>
+              <p className="g-p">이곳에는 머신러닝 시스템과 MLOps를 공부하며 정리한 기록이 쌓입니다. 읽은 논문, 직접 구성한 파이프라인, 한 번에 이해되지 않았던 개념을 제 언어로 다시 풀어 쓴 글들입니다.</p>
 
               <h2 className="g-h2">관심 분야</h2>
               <ul className="g-ul">
@@ -792,11 +794,8 @@ export default function StudyGazette() {
                 <li>AI 개발 도구와 코딩 에이전트 활용</li>
               </ul>
 
-              <h2 className="g-h2">약력</h2>
-              <p className="g-p">비개발자로 출발해 AI 엔지니어링을 공부하며 AI 엔지니어 신입으로의 전향을 준비하고 있습니다. 식물 진단 AI 서비스와 태양광 발전량 예측·ESS 운영 시뮬레이션 등 세 개의 프로젝트를 직접 설계·구현했고, 화려한 모델보다 평가셋과 측정으로 AI 시스템의 동작을 끝까지 통제하는 방식으로 일합니다.</p>
-
               <h2 className="g-h2">연락</h2>
-              <p className="g-p">이메일 <a href="mailto:rangedayo@naver.com" style={{ color: C.brick }}>rangedayo@naver.com</a> · GitHub <a href="https://github.com/rangedayo" target="_blank" rel="noreferrer" style={{ color: C.brick }}>github.com/rangedayo</a></p>
+              <p className="g-p">이메일 : <a href="mailto:rangedayo@naver.com" style={{ color: C.brick }}>rangedayo@naver.com</a><br />GitHub : <a href="https://github.com/rangedayo" target="_blank" rel="noreferrer" style={{ color: C.brick }}>github.com/rangedayo</a></p>
 
             </div>
           </article>
