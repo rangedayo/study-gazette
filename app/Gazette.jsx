@@ -200,10 +200,16 @@ function Body({ text, onImg }) {
     if (n.kind === "mermaid") return <Mermaid key={k} chart={n.text} />;
     if (n.kind === "code") return <pre key={k} className="g-pre">{n.text}</pre>;
     if (n.kind === "img") {
-      const [, alt, src] = n.text.match(/^!\[([^\]]*)\]\(([^)]+)\)/);
+      const [, rawAlt, src] = n.text.match(/^!\[([^\]]*)\]\(([^)]+)\)/);
+      // 캡션 안의 너비 토큰 {50%}·{400px}·{w=60%} → 표시 너비로 적용하고 캡션에선 제거
+      const wRe = /\{\s*(?:w\s*=\s*)?(\d+)\s*(%|px)?\s*\}/i;
+      const wm = rawAlt.match(wRe);
+      const width = wm ? wm[1] + (wm[2] || "px") : null;
+      const alt = rawAlt.replace(wRe, "").trim();
+      const imgStyle = width ? { width, maxWidth: "100%" } : undefined;
       return (
         <figure key={k} className="g-fig">
-          <img className="g-img" src={src} alt={alt} loading="lazy" onClick={onImg ? () => onImg(src) : undefined} />
+          <img className="g-img" style={imgStyle} src={src} alt={alt} loading="lazy" onClick={onImg ? () => onImg(src) : undefined} />
           {alt ? <figcaption className="g-cap">{alt}</figcaption> : null}
         </figure>
       );
