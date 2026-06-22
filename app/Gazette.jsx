@@ -141,40 +141,131 @@ function Mermaid({ chart }) {
   return <div className="g-mermaid" dangerouslySetInnerHTML={{ __html: svg }} />;
 }
 
+/* 인라인 마크다운(**굵게**·`코드`) → React 노드 */
+const inlineMd = (s) =>
+  String(s)
+    .split(/(\*\*[^*]+\*\*|`[^`]+`)/g)
+    .map((p, i) =>
+      p?.startsWith("**") ? <strong key={i}>{p.slice(2, -2)}</strong> :
+      p?.startsWith("`") ? <code key={i} className="g-code">{p.slice(1, -1)}</code> :
+      <span key={i}>{p}</span>
+    );
+
+/* 한 줄을 종류 + 들여쓰기 깊이(공백 2칸 = 1단계)로 분류 */
+const classifyLine = (raw) => {
+  const m = raw.match(/^([ \t]*)(.*)$/);
+  const depth = Math.floor(m[1].replace(/\t/g, "  ").length / 2);
+  const s = m[2];
+  if (s.trim() === "") return { kind: "blank", depth: 0, text: "" };
+  if (/^!\[[^\]]*\]\([^)]+\)\s*$/.test(s)) return { kind: "img", depth, text: s };
+  if (/^### /.test(s)) return { kind: "h3", depth, text: s.slice(4) };
+  if (/^## /.test(s)) return { kind: "h2", depth, text: s.slice(3) };
+  if (/^# /.test(s)) return { kind: "h2", depth, text: s.slice(2) };
+  if (/^> /.test(s)) return { kind: "quote", depth, text: s.slice(2) };
+  if (/^▸ /.test(s)) return { kind: "toggle", depth, text: s.slice(2) };
+  if (/^- /.test(s)) return { kind: "li", depth, text: s.slice(2) };
+  const om = s.match(/^\d+\.\s+(.*)$/);
+  if (om) return { kind: "oli", depth, text: om[1] };
+  return { kind: "p", depth, text: s };
+};
+
+/* 들여쓰기 깊이로 트리 구성 (자식 = 뒤따르는 더 깊은 줄) */
+const buildTree = (items, start, depth) => {
+  const nodes = [];
+  let i = start;
+  while (i < items.length) {
+    if (items[i].depth < depth) break;
+    const node = { ...items[i], depth, children: [] };
+    let j = i + 1;
+    const childStart = j;
+    while (j < items.length && items[j].depth > depth) j++;
+    if (j > childStart) node.children = buildTree(items, childStart, depth + 1);
+    nodes.push(node);
+    i = j;
+  }
+  return nodes;
+};
+
 function Body({ text, onImg }) {
+  let uid = 0;
+
+  const renderLeaf = (n) => {
+    const k = "L" + uid++;
+    if (n.kind === "img") {
+      const [, alt, src] = n.text.match(/^!\[([^\]]*)\]\(([^)]+)\)/);
+      return (
+        <figure key={k} className="g-fig">
+          <img className="g-img" src={src} alt={alt} loading="lazy" onClick={onImg ? () => onImg(src) : undefined} />
+          {alt ? <figcaption className="g-cap">{alt}</figcaption> : null}
+        </figure>
+      );
+    }
+    if (n.kind === "h3") return <h3 key={k} className="g-h3">{inlineMd(n.text)}</h3>;
+    if (n.kind === "h2") return <h2 key={k} className="g-h2">{inlineMd(n.text)}</h2>;
+    if (n.kind === "quote") return <blockquote key={k} className="g-quote">{inlineMd(n.text)}</blockquote>;
+    return <p key={k} className="g-p">{inlineMd(n.text)}</p>;
+  };
+
+  const renderNodes = (nodes) => {
+    const out = [];
+    let i = 0;
+    while (i < nodes.length) {
+      const n = nodes[i];
+      // 불릿/숫자 목록: 같은 종류가 이어지면 한 ul/ol로 묶는다
+      if (n.kind === "li" || n.kind === "oli") {
+        const ordered = n.kind === "oli";
+        const group = [];
+        while (i < nodes.length && nodes[i].kind === (ordered ? "oli" : "li")) { group.push(nodes[i]); i++; }
+        const items = group.map((g) => (
+          <li key={"i" + uid++}>{inlineMd(g.text)}{g.children.length ? renderNodes(g.children) : null}</li>
+        ));
+        out.push(ordered
+          ? <ol key={"o" + uid++} className="g-ol">{items}</ol>
+          : <ul key={"u" + uid++} className="g-ul">{items}</ul>);
+        continue;
+      }
+      // 토글: <details>로 접기/펼치기 (기본 접힘)
+      if (n.kind === "toggle") {
+        out.push(
+          <details key={"t" + uid++} className="g-toggle">
+            <summary>{inlineMd(n.text)}</summary>
+            <div className="g-toggle-body">{renderNodes(n.children)}</div>
+          </details>
+        );
+        i++; continue;
+      }
+      // 연속 빈 줄: 2줄 이상이면 그만큼 추가 간격
+      if (n.kind === "blank") {
+        let c = 0;
+        while (i < nodes.length && nodes[i].kind === "blank") { c++; i++; }
+        const extra = Math.min(c - 1, 3);
+        if (extra > 0) out.push(<div key={"g" + uid++} className="g-gap" style={{ height: extra * 0.9 + "rem" }} />);
+        continue;
+      }
+      // 그 외(제목·인용·이미지·문단) + 들여쓴 자식은 g-sub로 들여쓰기
+      out.push(renderLeaf(n));
+      if (n.children.length) out.push(<div key={"s" + uid++} className="g-sub">{renderNodes(n.children)}</div>);
+      i++;
+    }
+    return out;
+  };
+
   const segs = String(text).split("```");
   return segs.map((seg, si) => {
     if (si % 2 === 1) {
       if (/^mermaid\s/.test(seg)) return <Mermaid key={si} chart={seg.replace(/^mermaid\n/, "")} />;
       return <pre key={si} className="g-pre">{seg.replace(/^\w*\n/, "")}</pre>;
     }
-    const lines = seg.split("\n"); const out = []; let list = [];
-    const flush = (k) => { if (list.length) { out.push(<ul key={"u" + k} className="g-ul">{list}</ul>); list = []; } };
-    const inline = (s) => s.split(/(\*\*[^*]+\*\*|`[^`]+`)/g).map((p, i) =>
-      p?.startsWith("**") ? <strong key={i}>{p.slice(2, -2)}</strong> :
-      p?.startsWith("`") ? <code key={i} className="g-code">{p.slice(1, -1)}</code> : <span key={i}>{p}</span>);
-    lines.forEach((ln, i) => {
-      const k = si + "-" + i;
-      if (/^!\[[^\]]*\]\([^)]+\)\s*$/.test(ln)) {
-        flush(k);
-        const [, alt, src] = ln.match(/^!\[([^\]]*)\]\(([^)]+)\)/);
-        out.push(
-          <figure key={k} className="g-fig">
-            <img className="g-img" src={src} alt={alt} loading="lazy" onClick={onImg ? () => onImg(src) : undefined} />
-            {alt ? <figcaption className="g-cap">{alt}</figcaption> : null}
-          </figure>
-        );
-      }
-      else if (/^### /.test(ln)) { flush(k); out.push(<h3 key={k} className="g-h3">{inline(ln.slice(4))}</h3>); }
-      else if (/^## /.test(ln)) { flush(k); out.push(<h2 key={k} className="g-h2">{inline(ln.slice(3))}</h2>); }
-      else if (/^# /.test(ln)) { flush(k); out.push(<h2 key={k} className="g-h2">{inline(ln.slice(2))}</h2>); }
-      else if (/^> /.test(ln)) { flush(k); out.push(<blockquote key={k} className="g-quote">{inline(ln.slice(2))}</blockquote>); }
-      else if (/^- /.test(ln)) { list.push(<li key={k}>{inline(ln.slice(2))}</li>); }
-      else if (ln.trim() === "") { flush(k); }
-      else { flush(k); out.push(<p key={k} className="g-p">{inline(ln)}</p>); }
-    });
-    flush("e" + si);
-    return <div key={si}>{out}</div>;
+    if (seg === "") return null;
+    const items = seg.split("\n").map(classifyLine);
+    // 깊이가 한 번에 1단계 넘게 건너뛰지 않도록 정규화 (빈 줄은 영향 없음)
+    let prev = 0;
+    for (const it of items) {
+      if (it.kind === "blank") continue;
+      if (it.depth > prev + 1) it.depth = prev + 1;
+      prev = it.depth;
+    }
+    return <div key={si}>{renderNodes(buildTree(items, 0, 0))}</div>;
   });
 }
 
@@ -346,12 +437,23 @@ export default function StudyGazette() {
     .g-h3{font-family:${FD};font-weight:700;font-size:1.2rem;color:${C.ink};margin:1.4rem 0 .4rem}
     .g-p{margin:.7rem 0;line-height:1.85;font-size:.97rem;color:${C.body}}
     .g-ul{margin:.6rem 0 1rem;padding:0;list-style:none}
-    .g-ul li{position:relative;padding-left:1.3rem;margin:.4rem 0;line-height:1.7}
+    .g-ul li{position:relative;padding-left:1.3rem;margin:.4rem 0;line-height:1.7;font-size:.97rem;color:${C.body}}
     .g-ul li:before{content:"§";position:absolute;left:0;color:${C.mustard};font-weight:700}
     .g-bull li:before{content:"•"}
+    .g-ol{margin:.6rem 0 1rem;padding-left:1.55rem;list-style:decimal}
+    .g-ol li{margin:.4rem 0;line-height:1.7;padding-left:.2rem;font-size:.97rem;color:${C.body}}
+    .g-ol li::marker{color:${C.mustard};font-weight:700}
+    .g-ul .g-ul,.g-ul .g-ol,.g-ol .g-ul,.g-ol .g-ol{margin:.3rem 0 .35rem}
+    .g-sub{margin-left:1.3rem}
+    .g-toggle{margin:.7rem 0;border-left:2px solid ${C.frame};padding:.05rem 0 .05rem .75rem}
+    .g-toggle>summary{cursor:pointer;font-weight:600;color:${C.ink};font-size:.97rem;list-style:none;outline:none}
+    .g-toggle>summary::-webkit-details-marker{display:none}
+    .g-toggle>summary:before{content:"▸";color:${C.mustard};font-weight:700;margin-right:.45rem;display:inline-block;transition:transform .15s ease}
+    .g-toggle[open]>summary:before{transform:rotate(90deg)}
+    .g-toggle-body{margin:.35rem 0 .15rem}
     .g-quote{border-left:3px solid ${C.mustard};margin:1.2rem 0;padding:.3rem 0 .3rem 1.1rem;color:${C.ink};font-style:italic;font-family:${FD};font-size:1.16rem}
     .g-code{background:${C.tintM};color:${C.ink};padding:.08em .4em;border-radius:2px;font-size:.9em;font-family:${FM}}
-    .g-pre{background:${C.ink};color:${C.bg};padding:1rem;overflow-x:auto;font-size:.85rem;margin:1rem 0;font-family:${FM}}
+    .g-pre{background:${C.panel};color:${C.ink};border:1px solid ${C.rule};border-radius:3px;padding:1rem;overflow-x:auto;font-size:.85rem;line-height:1.6;margin:1rem 0;font-family:${FM}}
     .g-fig{margin:1.7rem 0;text-align:center}
     .g-img{max-width:100%;height:auto;border:1px solid ${C.frame};border-radius:4px;cursor:zoom-in;box-shadow:0 6px 18px rgba(44,49,58,.12);display:block;margin:0 auto}
     .g-cap{margin-top:.5rem;font-family:${FM};font-size:.8rem;color:${C.ink};opacity:.7}

@@ -101,8 +101,9 @@ const richToMd = (rich = []) =>
     .join("");
 
 // 한 페이지의 모든 블록을 가져온다 (페이지네이션 + 중첩 자식 블록까지 재귀로 평탄화).
-// 불릿 안에 넣은 이미지처럼 자식으로 들어간 블록도 부모 바로 뒤에 이어 붙여 읽기 순서를 보존.
-async function fetchAllBlocks(blockId) {
+// 자식으로 들어간 블록은 부모 바로 뒤에 이어 붙여 읽기 순서를 보존하되,
+// `_depth`(중첩 깊이)를 달아 둬서 마크다운에서 들여쓰기로 복원할 수 있게 한다.
+async function fetchAllBlocks(blockId, depth = 0) {
   const blocks = [];
   let cursor;
   do {
@@ -112,10 +113,11 @@ async function fetchAllBlocks(blockId) {
       page_size: 100,
     });
     for (const b of res.results) {
+      b._depth = depth;
       blocks.push(b);
       // 하위 페이지·DB는 별개 문서이므로 파고들지 않는다
       if (b.has_children && b.type !== "child_page" && b.type !== "child_database") {
-        blocks.push(...(await fetchAllBlocks(b.id)));
+        blocks.push(...(await fetchAllBlocks(b.id, depth + 1)));
       }
     }
     cursor = res.has_more ? res.next_cursor : undefined;
@@ -126,9 +128,18 @@ async function fetchAllBlocks(blockId) {
 async function blocksToMarkdown(blocks, postId) {
   const lines = [];
   let imgIndex = 0;
+  // 숫자 목록은 깊이별로 연속 카운트를 매겨 1·2·3…을 살린다.
+  const numCount = {}; // depth -> 현재 번호
+  const resetNum = (depth) => { for (const d in numCount) if (+d >= depth) delete numCount[d]; };
+
   for (const b of blocks) {
     const t = b.type;
     const data = b[t];
+    const depth = b._depth || 0;
+    const ind = "  ".repeat(depth); // 중첩 1단계 = 공백 2칸 (Body 파서와 약속)
+    // 숫자 목록이 아닌 블록을 만나면 그 깊이 이후의 번호 카운트를 초기화
+    if (t !== "numbered_list_item") resetNum(depth);
+
     switch (t) {
       case "image": {
         const src = data.type === "external" ? data.external?.url : data.file?.url;
@@ -137,45 +148,59 @@ async function blocksToMarkdown(blocks, postId) {
         const caption = richToMd(data.caption ?? []);
         try {
           const localPath = await saveImage(src, postId, imgIndex);
-          lines.push(`![${caption}](${localPath})`, "");
+          lines.push(ind + `![${caption}](${localPath})`);
         } catch (e) {
           console.error(`  ⚠ 이미지 #${imgIndex} 건너뜀: ${e.message}`);
         }
         break;
       }
       case "heading_1":
-        lines.push("# " + richToMd(data.rich_text), "");
+        lines.push(ind + "# " + richToMd(data.rich_text));
         break;
       case "heading_2":
-        lines.push("## " + richToMd(data.rich_text), "");
+        lines.push(ind + "## " + richToMd(data.rich_text));
         break;
       case "heading_3":
-        lines.push("### " + richToMd(data.rich_text), "");
+        lines.push(ind + "### " + richToMd(data.rich_text));
         break;
       case "bulleted_list_item":
-      case "numbered_list_item":
-        lines.push("- " + richToMd(data.rich_text));
+        lines.push(ind + "- " + richToMd(data.rich_text));
+        break;
+      case "numbered_list_item": {
+        numCount[depth] = (numCount[depth] || 0) + 1;
+        for (const d in numCount) if (+d > depth) delete numCount[d];
+        lines.push(ind + numCount[depth] + ". " + richToMd(data.rich_text));
+        break;
+      }
+      case "toggle":
+        // ▸ 접두사로 토글임을 표시 → Body 파서가 <details>로 렌더
+        lines.push(ind + "▸ " + richToMd(data.rich_text));
         break;
       case "quote":
-        lines.push("> " + richToMd(data.rich_text), "");
+        lines.push(ind + "> " + richToMd(data.rich_text));
+        break;
+      case "divider":
+        lines.push("---");
         break;
       case "code": {
+        // 코드펜스는 들여쓰지 않는다(파서의 ``` 분리와 충돌 방지)
         const lang = data.language && data.language !== "plain text" ? data.language : "";
-        lines.push("```" + lang, richToMd(data.rich_text), "```", "");
+        lines.push("```" + lang, richToMd(data.rich_text), "```");
         break;
       }
       case "paragraph": {
         const md = richToMd(data.rich_text);
-        lines.push(md, ""); // 빈 문단은 빈 줄로 → 문단 구분
+        // 빈 문단(엔터)은 빈 줄 1개로 보존 → 연속 엔터가 그대로 간격이 된다
+        lines.push(md ? ind + md : "");
         break;
       }
-      // 구분선·표·토글 등 그 외 블록은 건너뜀 (현재 미지원)
+      // 그 외 블록(표 등)은 건너뜀 (현재 미지원)
       default:
         break;
     }
   }
-  // 끝부분 연속 빈 줄 정리
-  return lines.join("\n").replace(/\n{3,}/g, "\n\n").trim();
+  // 과한 공백만 정리: 빈 줄 3개까지 허용
+  return lines.join("\n").replace(/\n{5,}/g, "\n\n\n\n").trim();
 }
 
 /* ── DB 쿼리 (Published == true 만, Date 내림차순) ─────── */
