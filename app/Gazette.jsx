@@ -297,7 +297,7 @@ function Body({ text, onImg }) {
     }
     // 표: 헤더행( |..|..| ) + 구분행( |---|---| ) + 본문행들을 하나의 table 아이템으로 묶는다
     const isPipe = (l) => l != null && /^[ \t]*\|.*\|[ \t]*$/.test(l);
-    const isSep = (l) => l != null && /^[ \t]*\|[ \t:|-]+\|[ \t]*$/.test(l);
+    const isSep = (l) => l != null && /-/.test(l) && /^[ \t]*\|[ \t:|-]+\|[ \t]*$/.test(l);
     if (isPipe(rawLines[i]) && !isSep(rawLines[i]) && isSep(rawLines[i + 1])) {
       const indent = (rawLines[i].match(/^[ \t]*/)[0]).replace(/\t/g, "  ");
       const depth = Math.floor(indent.length / 2);
