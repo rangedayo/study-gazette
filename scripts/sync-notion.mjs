@@ -33,6 +33,37 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const OUT_PATH = resolve(__dirname, "../data/posts.json");
 const IMG_ROOT = resolve(__dirname, "../public/posts"); // 글 이미지 저장 위치
 
+/* ── 재시도 래퍼 ──────────────────────────────────────────
+   Notion API/이미지 fetch 는 가끔 응답 도중 연결이 끊긴다
+   ("Invalid response body ... Premature close"). 일시적 끊김이라
+   잠깐 기다렸다 다시 부르면 대개 통과한다. 지수 백오프로 재시도. */
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+async function withRetry(fn, { tries = 4, base = 800, label = "요청" } = {}) {
+  let lastErr;
+  for (let i = 0; i < tries; i++) {
+    try {
+      return await fn();
+    } catch (err) {
+      lastErr = err;
+      const msg = String(err?.message || err);
+      // 인증·권한·요청 형식 오류(4xx)는 재시도해도 소용없으니 즉시 중단
+      const status = err?.status;
+      const retriable =
+        /premature close|invalid response body|fetch failed|terminated|ECONNRESET|socket hang up|network|ETIMEDOUT/i.test(
+          msg
+        ) ||
+        status === 429 ||
+        (typeof status === "number" && status >= 500);
+      if (!retriable || i === tries - 1) throw err;
+      const wait = base * 2 ** i; // 0.8s → 1.6s → 3.2s ...
+      console.warn(`· ${label} 실패(${msg}) — ${wait}ms 후 재시도 ${i + 1}/${tries - 1}`);
+      await sleep(wait);
+    }
+  }
+  throw lastErr;
+}
+
 /* ── 이미지 다운로드 ───────────────────────────────────── */
 // Notion 호스팅 이미지 URL은 ~1시간 뒤 만료되므로, 받아서 public/에 저장한다.
 
@@ -49,9 +80,19 @@ const extFromUrl = (url) => {
 async function saveImageAs(url, postId, name) {
   const dir = resolve(IMG_ROOT, postId);
   await mkdir(dir, { recursive: true });
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  await writeFile(resolve(dir, name), Buffer.from(await res.arrayBuffer()));
+  const buf = await withRetry(
+    async () => {
+      const res = await fetch(url);
+      if (!res.ok) {
+        const e = new Error(`HTTP ${res.status}`);
+        e.status = res.status;
+        throw e;
+      }
+      return Buffer.from(await res.arrayBuffer());
+    },
+    { label: `이미지 다운로드(${name})` }
+  );
+  await writeFile(resolve(dir, name), buf);
   return `/posts/${postId}/${name}`;
 }
 
@@ -108,11 +149,15 @@ async function fetchAllBlocks(blockId, depth = 0) {
   const blocks = [];
   let cursor;
   do {
-    const res = await notion.blocks.children.list({
-      block_id: blockId,
-      start_cursor: cursor,
-      page_size: 100,
-    });
+    const res = await withRetry(
+      () =>
+        notion.blocks.children.list({
+          block_id: blockId,
+          start_cursor: cursor,
+          page_size: 100,
+        }),
+      { label: "Notion 블록 조회" }
+    );
     for (const b of res.results) {
       b._depth = depth;
       blocks.push(b);
@@ -265,13 +310,17 @@ async function fetchPublishedPages() {
   const pages = [];
   let cursor;
   do {
-    const res = await notion.databases.query({
-      database_id: DB_ID,
-      filter: { property: "Published", checkbox: { equals: true } },
-      sorts: [{ property: "Date", direction: "descending" }],
-      start_cursor: cursor,
-      page_size: 100,
-    });
+    const res = await withRetry(
+      () =>
+        notion.databases.query({
+          database_id: DB_ID,
+          filter: { property: "Published", checkbox: { equals: true } },
+          sorts: [{ property: "Date", direction: "descending" }],
+          start_cursor: cursor,
+          page_size: 100,
+        }),
+      { label: "Notion DB 쿼리" }
+    );
     pages.push(...res.results);
     cursor = res.has_more ? res.next_cursor : undefined;
   } while (cursor);
