@@ -12,6 +12,7 @@
 // 본문 변환 규칙은 sync-notion.mjs와 동일(머메이드 코드블록·인라인 이미지 포함).
 
 import { Client } from "@notionhq/client";
+import { fetch as undiciFetch, Agent } from "undici";
 import { writeFile, mkdir, rm } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -25,7 +26,18 @@ if (!TOKEN) {
   process.exit(1);
 }
 
-const notion = new Client({ auth: TOKEN });
+/* ── HTTP 커넥션 정책 (sync-notion.mjs 와 동일) ───────────
+   Notion(Cloudflare 뒤단)이 응답을 도중에 끊는 "Premature close" 가 나면
+   undici 기본 풀이 죽은 keep-alive 소켓을 재사용해 계속 같은 에러로 죽는다.
+   keep-alive 를 사실상 꺼서 매 요청이 새 커넥션을 열게 한다. */
+const dispatcher = new Agent({
+  keepAliveTimeout: 1,
+  keepAliveMaxTimeout: 1,
+  pipelining: 0,
+});
+const freshFetch = (url, init = {}) => undiciFetch(url, { ...init, dispatcher });
+
+const notion = new Client({ auth: TOKEN, fetch: freshFetch });
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const OUT_PATH = resolve(__dirname, "../data/projects.json");
@@ -67,7 +79,7 @@ async function saveImage(url, projId, index) {
   const dir = resolve(IMG_ROOT, projId);
   await mkdir(dir, { recursive: true });
   const name = String(index).padStart(2, "0") + extFromUrl(url);
-  const res = await fetch(url);
+  const res = await freshFetch(url);
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   await writeFile(resolve(dir, name), Buffer.from(await res.arrayBuffer()));
   return `/projects/${projId}/${name}`;
