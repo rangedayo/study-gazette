@@ -24,9 +24,9 @@ jobs:
         with:
           node-version: 22
 
-      # @notionhq/client 만 있으면 되므로 가볍게 설치
+      # @notionhq/client + undici(커넥션 풀 제어용) 가볍게 설치
       - name: Install dependencies
-        run: npm install @notionhq/client@^2.2.15 --no-save
+        run: npm install @notionhq/client@^2.2.15 undici --no-save
 
       - name: Sync posts from Notion
         env:

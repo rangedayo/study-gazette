@@ -15,6 +15,7 @@
 // (목록 썸네일·상세 히어로용. 커버가 없으면 사이트가 자동 추상 그림 Art 로 폴백)
 
 import { Client } from "@notionhq/client";
+import { fetch as undiciFetch, Agent } from "undici";
 import { writeFile, mkdir, rm } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -27,7 +28,20 @@ if (!TOKEN || !DB_ID) {
   process.exit(1);
 }
 
-const notion = new Client({ auth: TOKEN });
+/* ── HTTP 커넥션 정책 ─────────────────────────────────────
+   Notion(Cloudflare 뒤단)은 가끔 응답을 도중에 끊는다("Premature close").
+   문제는 undici 기본 커넥션 풀이 그 죽은 keep-alive 소켓을 그대로 재사용해,
+   재시도해도 같은 소켓을 잡아 매번 즉시 같은 에러로 죽는다는 점.
+   → keep-alive 를 사실상 꺼서(타임아웃 1ms) 매 요청·매 재시도가
+     새 커넥션을 열게 한다. 그래야 withRetry 가 실제로 효과를 낸다. */
+const dispatcher = new Agent({
+  keepAliveTimeout: 1,
+  keepAliveMaxTimeout: 1,
+  pipelining: 0,
+});
+const freshFetch = (url, init = {}) => undiciFetch(url, { ...init, dispatcher });
+
+const notion = new Client({ auth: TOKEN, fetch: freshFetch });
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const OUT_PATH = resolve(__dirname, "../data/posts.json");
@@ -82,7 +96,7 @@ async function saveImageAs(url, postId, name) {
   await mkdir(dir, { recursive: true });
   const buf = await withRetry(
     async () => {
-      const res = await fetch(url);
+      const res = await freshFetch(url);
       if (!res.ok) {
         const e = new Error(`HTTP ${res.status}`);
         e.status = res.status;
