@@ -2,7 +2,7 @@ name: Sync Notion → posts.json / projects.json
 
 on:
   schedule:
-    - cron: "0 * * * *" # 매시 정각 자동 동기화
+    - cron: "0 15 * * *" # 매일 1회 자동 동기화 (UTC 15:00 = KST 자정)
   workflow_dispatch: {} # Actions 탭에서 "Run workflow" 수동 실행
 
 # 자동 커밋을 위해 쓰기 권한 부여
