@@ -9,7 +9,7 @@ import PROJECTS_DATA from "../data/projects.json";
    디자인: 활판 인쇄소(letterpress) 골격 + 차분한 슬레이트/그레이지 색감
    - 슬레이트블루 #5F7480 (메인) / 클레이 #9B7568 (포인트) / 쿨차콜 #2C313A (잉크)
    - 그레이지 바탕 #EBE9E3, 연한 그레이지 테두리 #C6C0B4, 이중 규칙선, 표제 구조
-   - display: Playfair Display(블랙) / body: Inter / 캡션: DM Mono
+   - display·body: Newsreader(세리프 통일, 폴백 Georgia) / 캡션: DM Mono
    데이터: knowledge_garden 에디터의 저장소를 그대로 읽음 (글쓰기는 거기서)
 
    페이지 구성
@@ -20,13 +20,14 @@ import PROJECTS_DATA from "../data/projects.json";
    ════════════════════════════════════════════════════════════ */
 
 const C = {
-  bg: "#F0EFEB", panel: "#FAF8F3", ink: "#2C313A", body: "#50545C", mute: "#928F86",
+  bg: "#FFFFFF", panel: "#FBF8EF", card: "#FFFEF9", ink: "#2C313A", body: "#50545C", mute: "#928F86",
   rule: "#D5D1C8", mustard: "#5F7480", brick: "#9B7568", tintM: "#DEE3E3", tintB: "#E7DDD6",
   frame: "#C6C0B4", accentD: "#4C5E68",
 };
-const FD = "'Playfair Display', Georgia, serif";
-const FB = "'Inter', -apple-system, system-ui, sans-serif";
-const FM = "'DM Mono', ui-monospace, monospace";
+const FD = "'Newsreader', Georgia, serif";
+const FB = "'Newsreader', Georgia, serif";
+const FM = "'Newsreader', Georgia, serif";       // 라벨·키커·태그도 세리프로 통일 (참고 링크 방식)
+const FC = "'DM Mono', ui-monospace, monospace";  // 모노는 코드(인라인/코드블록)에만
 
 const GitHubMark = () => (
   <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
@@ -495,15 +496,15 @@ export default function StudyGazette() {
   if (!posts) return <div style={{ minHeight: "100vh", background: C.bg }} />;
 
   const css = `
-    @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700&family=Inter:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Newsreader:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400;1,600&family=DM+Mono:wght@400;500&display=swap');
     .gz *{box-sizing:border-box} .gz{background:${C.bg};color:${C.body};font-family:${FB};-webkit-font-smoothing:antialiased;
       background-image:linear-gradient(${C.ink}08 1px,transparent 1px);background-size:100% 30px}
     .gz button{cursor:pointer;font-family:${FB}} .gz a{cursor:pointer}
     .eyebrow{font-family:${FB};font-size:11px;letter-spacing:.32em;text-transform:uppercase;color:${C.brick};font-weight:600}
     .kicker{font-family:${FM};font-size:11px;letter-spacing:.12em;color:${C.mute};text-transform:uppercase}
     .dbl-top{border-top:3px double ${C.ink}} .dbl-bot{border-bottom:3px double ${C.ink}}
-    .g-h2{font-family:${FD};font-weight:700;font-size:1.5rem;color:${C.ink};margin:1.9rem 0 .6rem;line-height:1.25}
-    .g-h3{font-family:${FD};font-weight:700;font-size:1.2rem;color:${C.ink};margin:1.4rem 0 .4rem}
+    .g-h2{font-family:${FD};font-weight:600;font-size:1.5rem;color:${C.ink};margin:1.9rem 0 .6rem;line-height:1.25}
+    .g-h3{font-family:${FD};font-weight:600;font-size:1.2rem;color:${C.ink};margin:1.4rem 0 .4rem}
     .g-p{margin:.7rem 0;line-height:1.85;font-size:.97rem;color:${C.body}}
     .g-ul{margin:.6rem 0 1rem;padding:0;list-style:none}
     .g-ul>li{position:relative;padding-left:1.3rem;margin:.4rem 0;line-height:1.7;font-size:.97rem;color:${C.body}}
@@ -521,8 +522,8 @@ export default function StudyGazette() {
     .g-toggle[open]>summary:before{transform:rotate(90deg)}
     .g-toggle-body{margin:.35rem 0 .15rem}
     .g-quote{border-left:3px solid ${C.mustard};margin:1.2rem 0;padding:.3rem 0 .3rem 1.1rem;color:${C.ink};font-style:italic;font-family:${FD};font-size:1.16rem}
-    .g-code{background:${C.tintM};color:${C.ink};padding:.08em .4em;border-radius:2px;font-size:.9em;font-family:${FM}}
-    .g-pre{background:${C.panel};color:${C.ink};border:1px solid ${C.rule};border-radius:3px;padding:1rem;overflow-x:auto;font-size:.85rem;line-height:1.6;margin:1rem 0;font-family:${FM}}
+    .g-code{background:${C.tintM};color:${C.ink};padding:.08em .4em;border-radius:2px;font-size:.9em;font-family:${FC}}
+    .g-pre{background:${C.panel};color:${C.ink};border:1px solid ${C.rule};border-radius:3px;padding:1rem;overflow-x:auto;font-size:.85rem;line-height:1.6;margin:1rem 0;font-family:${FC}}
     .g-fig{margin:1.7rem 0;text-align:center}
     .g-img{max-width:100%;height:auto;border:1px solid ${C.frame};border-radius:4px;cursor:zoom-in;box-shadow:0 6px 18px rgba(44,49,58,.12);display:block;margin:0 auto}
     .g-cap{margin-top:.5rem;font-family:${FM};font-size:.8rem;color:${C.ink};opacity:.7}
@@ -538,7 +539,7 @@ export default function StudyGazette() {
     .navlink.on:after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:2px;background:${C.mustard}}
     .ed{background:${C.mustard};color:${C.bg};border:1.5px solid ${C.accentD};border-radius:2px;padding:11px 26px;font-family:${FB};font-size:13px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;transition:background .3s ease}
     .ed:hover{background:${C.brick}} .ed:disabled{opacity:.55;cursor:default}
-    .chip{font-family:${FM};font-size:12px;color:${C.body};background:${C.panel};border:1px solid ${C.rule};border-radius:2px;padding:6px 12px;transition:border-color .3s ease,color .3s ease,background .3s ease}
+    .chip{font-family:${FM};font-size:12px;color:${C.body};background:${C.card};border:1px solid ${C.rule};border-radius:2px;padding:6px 12px;transition:border-color .3s ease,color .3s ease,background .3s ease}
     .chip:hover{border-color:${C.ink};color:${C.ink};background:${C.tintM}}
 
     /* 글 카드 hover ③ — 떠오름 + 잉크 그림자 + 제목 색 */
@@ -608,7 +609,7 @@ export default function StudyGazette() {
     .ac-hash{color:${C.mustard};font-weight:600}
 
     /* 이전/다음 글 카드 — hover ② 좌측 머스터드 바 */
-    .pn-card{position:relative;display:flex;flex-direction:column;border:1px solid ${C.frame};background:${C.panel};cursor:pointer;overflow:hidden}
+    .pn-card{position:relative;display:flex;flex-direction:column;border:1px solid ${C.frame};background:${C.card};cursor:pointer;overflow:hidden}
     .pn-card .pn-bar{position:absolute;left:0;top:0;bottom:0;width:0;background:${C.mustard};z-index:3;transition:width .3s ease}
     .pn-card .pn-body{transition:padding-left .3s ease}
     .pn-card .ttl{transition:color .3s ease}
@@ -623,7 +624,7 @@ export default function StudyGazette() {
     .gz-input::placeholder{color:${C.mute}}
     /* 검색바 포커스 — 바탕 밝아짐 + 슬레이트 링 (쓰는 중 인지) */
     .searchbar{transition:background .25s ease,border-color .25s ease,box-shadow .25s ease}
-    .searchbar:focus-within{background:#FCFBF8 !important;border-color:${C.accentD} !important;box-shadow:0 0 0 3px rgba(95,116,128,.16)}
+    .searchbar:focus-within{background:#FFFFFF !important;border-color:${C.accentD} !important;box-shadow:0 0 0 3px rgba(95,116,128,.16)}
     .blink{animation:bk 1s steps(2,start) infinite} @keyframes bk{to{opacity:.2}}
     @media(max-width:820px){.grid2{grid-template-columns:1fr !important}.hide-sm{display:none !important}.masthead h1{font-size:2.6rem !important}}
   `;
@@ -633,11 +634,11 @@ export default function StudyGazette() {
 
   /* 가로형 목록 아이템 (Front Page / 카테고리 / 검색 결과) */
   const ListItem = ({ p }) => (
-    <article className="hov" style={{ display: "grid", gridTemplateColumns: "150px 1fr", gap: "1.5rem", padding: "1.4rem", marginBottom: "1.1rem", border: `1px solid ${C.frame}`, background: C.panel }} onClick={() => open(p.id)}>
+    <article className="hov" style={{ display: "grid", gridTemplateColumns: "150px 1fr", gap: "1.5rem", padding: "1.4rem", marginBottom: "1.1rem", border: `1px solid ${C.frame}`, background: C.card }} onClick={() => open(p.id)}>
       <div style={{ height: 120, border: `1px solid ${C.frame}`, overflow: "hidden" }}><ProjImage src={p.thumb} seed={p.id + p.title} alt={p.title} /></div>
       <div>
         <div className="kicker" style={{ marginBottom: 8 }}>{p.category} · {fmt(p.updated)}</div>
-        <h3 className="ttl" style={{ fontFamily: FD, fontWeight: 700, fontSize: "1.34rem", color: C.ink, lineHeight: 1.2, margin: "0 0 .5rem" }}>{p.title}</h3>
+        <h3 className="ttl" style={{ fontFamily: FD, fontWeight: 600, fontSize: "1.34rem", color: C.ink, lineHeight: 1.2, margin: "0 0 .5rem" }}>{p.title}</h3>
         <p style={{ margin: 0, color: C.body, fontSize: ".9rem", lineHeight: 1.7, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{clean(p.body).slice(0, 150)}</p>
         <div style={{ marginTop: ".7rem" }}>{(p.tags || []).slice(0, 3).map((t) => <span key={t} style={{ fontFamily: FM, fontSize: 11, color: C.mute, marginRight: 12 }}>#{t}</span>)}</div>
       </div>
@@ -646,11 +647,11 @@ export default function StudyGazette() {
 
   /* 세로형 카드 (AI 사서 추천 결과) */
   const ResultCard = ({ p }) => (
-    <div className="hov" onClick={() => open(p.id)} style={{ background: C.panel, border: `1px solid ${C.frame}`, borderRadius: 2, overflow: "hidden", cursor: "pointer", display: "flex", flexDirection: "column" }}>
+    <div className="hov" onClick={() => open(p.id)} style={{ background: C.card, border: `1px solid ${C.frame}`, borderRadius: 2, overflow: "hidden", cursor: "pointer", display: "flex", flexDirection: "column" }}>
       <div style={{ height: 96, borderBottom: `1px solid ${C.frame}`, overflow: "hidden" }}><ProjImage src={p.thumb} seed={p.id + p.title} alt={p.title} /></div>
       <div style={{ padding: "10px 13px 13px" }}>
         <div className="kicker" style={{ marginBottom: 6, fontSize: 10 }}>{p.category}</div>
-        <h3 className="ttl" style={{ fontFamily: FD, fontWeight: 700, fontSize: "1.08rem", color: C.ink, lineHeight: 1.25, margin: "0 0 .4rem" }}>{p.title}</h3>
+        <h3 className="ttl" style={{ fontFamily: FD, fontWeight: 600, fontSize: "1.08rem", color: C.ink, lineHeight: 1.25, margin: "0 0 .4rem" }}>{p.title}</h3>
         <p style={{ margin: 0, fontSize: ".86rem", color: C.body, lineHeight: 1.55, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{clean(p.body).slice(0, 96)}</p>
         <div style={{ marginTop: 8 }}>{(p.tags || []).slice(0, 3).map((t) => <span key={t} style={{ fontFamily: FM, fontSize: 10, color: C.mute, marginRight: 10 }}>#{t}</span>)}</div>
       </div>
@@ -669,7 +670,7 @@ export default function StudyGazette() {
 
         {route.name === "home" && (
         <div className="ac-wrap" style={{ maxWidth: 600, margin: "1.5rem auto 0", textAlign: "left" }}>
-          <div className="searchbar" style={{ display: "flex", alignItems: "stretch", gap: 0, background: C.panel, border: `1.5px solid ${C.mustard}`, borderRadius: 2, overflow: "hidden" }}>
+          <div className="searchbar" style={{ display: "flex", alignItems: "stretch", gap: 0, background: "#FFFFFF", border: `1.5px solid ${C.mustard}`, borderRadius: 2, overflow: "hidden" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10, flex: 1, padding: "0 16px" }}>
               <Magnifier size={15} color={C.mustard} sw={1.5} />
               <input id="gz-main-search" className="gz-input" value={chatInput}
@@ -721,14 +722,14 @@ export default function StudyGazette() {
           <section className="grid2" style={{ display: "grid", gridTemplateColumns: "1fr 225px", gap: "3rem", padding: "2.4rem 0 4rem", alignItems: "start" }}>
             <div id="writing">
               {featured && (
-                <div className="hov" style={{ border: `1px solid ${C.frame}`, background: C.panel, marginBottom: "2.2rem" }} onClick={() => open(featured.id)}>
+                <div className="hov" style={{ border: `1px solid ${C.frame}`, background: C.card, marginBottom: "2.2rem" }} onClick={() => open(featured.id)}>
                   <div style={{ height: 280, borderBottom: `1px solid ${C.frame}`, overflow: "hidden", position: "relative" }}>
                     <ProjImage src={featured.thumb} seed={featured.id + "feat"} alt={featured.title} />
                     <div style={{ position: "absolute", top: 14, left: 14, background: C.bg, border: `1.5px solid ${C.frame}`, padding: "3px 12px" }} className="eyebrow">Featured Study</div>
                   </div>
                   <div style={{ padding: "1.5rem 1.8rem 1.8rem" }}>
                     <div className="kicker" style={{ marginBottom: 10 }}>{featured.category} · {fmt(featured.updated)} · {readMin(featured.body)}</div>
-                    <h2 className="ttl" style={{ fontFamily: FD, fontWeight: 900, fontSize: "1.9rem", color: C.ink, margin: "0 0 .6rem", lineHeight: 1.12 }}>{featured.title}</h2>
+                    <h2 className="ttl" style={{ fontFamily: FD, fontWeight: 700, fontSize: "1.9rem", color: C.ink, margin: "0 0 .6rem", lineHeight: 1.12 }}>{featured.title}</h2>
                     <p style={{ margin: 0, color: C.body, lineHeight: 1.8, fontSize: ".97rem" }}>{clean(featured.body).slice(0, 190)}…</p>
                     <button className="ed" style={{ marginTop: "1.3rem" }}>Read the issue</button>
                   </div>
@@ -757,7 +758,7 @@ export default function StudyGazette() {
                 {cats.map(([c, n]) => (
                   <button key={c} className="cat-row" onClick={() => goTo({ name: "cat", value: c })}
                     style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", width: "100%", background: "none", border: "none", padding: ".55rem 0", borderBottom: `1px solid ${C.rule}`, color: C.body, fontSize: ".94rem", cursor: "pointer" }}>
-                    <span className="cat-name" style={{ fontFamily: FD, fontWeight: 700, color: C.ink }}>{c}</span>
+                    <span className="cat-name" style={{ fontFamily: FD, fontWeight: 600, color: C.ink }}>{c}</span>
                     <span style={{ fontFamily: FM, fontSize: 12, color: C.mustard }}>{String(n).padStart(2, "0")}</span>
                   </button>
                 ))}
@@ -771,7 +772,7 @@ export default function StudyGazette() {
           <article style={{ maxWidth: 720, margin: "0 auto", padding: "2.8rem 0 4rem" }}>
             <button onClick={goHome} className="eyebrow" style={{ background: "none", border: "none", padding: 0, marginBottom: "1.8rem" }}>← Back to front page</button>
             <div className="eyebrow" style={{ marginBottom: "1rem" }}>The Editor</div>
-            <h1 style={{ fontFamily: FD, fontWeight: 900, fontSize: "clamp(2rem,5vw,2.9rem)", color: C.ink, lineHeight: 1.1, margin: "0 0 .6rem" }}>최사랑</h1>
+            <h1 style={{ fontFamily: FD, fontWeight: 700, fontSize: "clamp(2rem,5vw,2.9rem)", color: C.ink, lineHeight: 1.1, margin: "0 0 .6rem" }}>최사랑</h1>
             <p style={{ fontFamily: FD, fontStyle: "italic", fontSize: "1.1rem", color: C.brick, margin: "0 0 1.8rem" }}>Editor · MLOps &amp; ML Systems</p>
 
             <div className="dbl-top" style={{ marginBottom: "2.2rem" }} />
@@ -803,12 +804,12 @@ export default function StudyGazette() {
           <section style={{ maxWidth: 760, margin: "0 auto", padding: "2.8rem 0 4rem" }}>
             <div style={{ textAlign: "center", marginBottom: "2rem" }}>
               <div className="eyebrow" style={{ marginBottom: 10 }}>The Archive</div>
-              <h1 style={{ fontFamily: FD, fontWeight: 900, fontSize: "clamp(1.9rem,4.5vw,2.6rem)", color: C.ink, lineHeight: 1.1, margin: "0 0 .5rem" }}>무엇이 궁금하신가요?</h1>
+              <h1 style={{ fontFamily: FD, fontWeight: 700, fontSize: "clamp(1.9rem,4.5vw,2.6rem)", color: C.ink, lineHeight: 1.1, margin: "0 0 .5rem" }}>무엇이 궁금하신가요?</h1>
               <p style={{ fontFamily: FD, fontStyle: "italic", fontSize: "1.05rem", color: C.mute, margin: 0 }}>작성된 글 전체를 AI 사서에게 물어보세요</p>
             </div>
 
             {/* 입력창 */}
-            <div className="searchbar" style={{ display: "flex", alignItems: "center", gap: 0, background: C.panel, border: `1.5px solid ${C.mustard}`, borderRadius: 2, marginBottom: "1.1rem", overflow: "hidden" }}>
+            <div className="searchbar" style={{ display: "flex", alignItems: "center", gap: 0, background: "#FFFFFF", border: `1.5px solid ${C.mustard}`, borderRadius: 2, marginBottom: "1.1rem", overflow: "hidden" }}>
               <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 9, padding: "11px 14px" }}>
                 <Magnifier size={15} color={C.mustard} sw={1.5} />
                 <input className="gz-input" value={chatInput} onChange={(e) => setChatInput(e.target.value)}
@@ -881,20 +882,20 @@ export default function StudyGazette() {
           <section style={{ padding: "2.4rem 0 4rem" }}>
             <div style={{ textAlign: "center", marginBottom: "2.2rem" }}>
               <div className="eyebrow" style={{ marginBottom: 10 }}>Projects</div>
-              <h1 style={{ fontFamily: FD, fontWeight: 900, fontSize: "clamp(1.9rem,4.5vw,2.6rem)", color: C.ink, lineHeight: 1.1, margin: "0 0 .5rem" }}>빌드 노트</h1>
+              <h1 style={{ fontFamily: FD, fontWeight: 700, fontSize: "clamp(1.9rem,4.5vw,2.6rem)", color: C.ink, lineHeight: 1.1, margin: "0 0 .5rem" }}>빌드 노트</h1>
               <p style={{ fontFamily: FD, fontStyle: "italic", color: C.mute, fontSize: "1.05rem", margin: 0 }}>공부가 코드와 제품이 된 기록</p>
             </div>
 
             <div style={{ display: "flex", flexDirection: "column", gap: "2rem" }}>
               {PROJECTS.map((pr, i) => (
-                <article key={pr.id} className="proj" onClick={() => openProject(pr.id)} style={{ border: `1px solid ${C.frame}`, background: C.panel, display: "grid", gridTemplateColumns: "300px 1fr" }}>
+                <article key={pr.id} className="proj" onClick={() => openProject(pr.id)} style={{ border: `1px solid ${C.frame}`, background: C.card, display: "grid", gridTemplateColumns: "300px 1fr" }}>
                   <div className="proj-thumb">
                     <ProjImage src={pr.thumb} seed={pr.id + pr.title} alt={pr.title} fit="cover" pos="top center" />
                     <div className="kicker" style={{ position: "absolute", top: 12, left: 12, background: C.bg, border: `1.5px solid ${C.frame}`, padding: "3px 11px" }}>No. {String(i + 1).padStart(2, "0")}</div>
                   </div>
                   <div style={{ padding: "1.6rem 1.8rem" }}>
                     <div className="kicker" style={{ marginBottom: 8 }}>{pr.kind}</div>
-                    <h2 style={{ fontFamily: FD, fontWeight: 900, fontSize: "1.45rem", color: C.ink, lineHeight: 1.2, margin: "0 0 .7rem" }}>{pr.title}</h2>
+                    <h2 style={{ fontFamily: FD, fontWeight: 700, fontSize: "1.45rem", color: C.ink, lineHeight: 1.2, margin: "0 0 .7rem" }}>{pr.title}</h2>
                     <p style={{ margin: "0 0 1rem", color: C.body, lineHeight: 1.75, fontSize: "1rem" }}>{pr.summary}</p>
                     <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: "1rem" }}>
                       {pr.stack.map((s) => <span key={s} style={{ fontFamily: FM, fontSize: 11, color: C.ink, background: C.tintM, padding: "3px 9px", borderRadius: 2 }}>{s}</span>)}
@@ -913,7 +914,7 @@ export default function StudyGazette() {
           <article style={{ maxWidth: 760, margin: "0 auto", padding: "2.8rem 0 4rem" }}>
             <button onClick={goBack} className="eyebrow" style={{ background: "none", border: "none", padding: 0, marginBottom: "1.8rem", cursor: "pointer" }}>← Back to projects</button>
             <div className="kicker" style={{ marginBottom: "1rem" }}>{curProj.kind}</div>
-            <h1 style={{ fontFamily: FD, fontWeight: 900, fontSize: "clamp(1.9rem,4.5vw,2.7rem)", color: C.ink, lineHeight: 1.15, margin: "0 0 1.4rem" }}>{curProj.title}</h1>
+            <h1 style={{ fontFamily: FD, fontWeight: 700, fontSize: "clamp(1.9rem,4.5vw,2.7rem)", color: C.ink, lineHeight: 1.15, margin: "0 0 1.4rem" }}>{curProj.title}</h1>
             {curProj.shots?.length
               ? <div className="dbl-top dbl-bot proj-shots">
                   {curProj.shots.map((s, i) => (
@@ -967,7 +968,7 @@ export default function StudyGazette() {
         {route.name === "cat" && (
           <section style={{ padding: "2.4rem 0 4rem" }}>
             <button onClick={goHome} className="eyebrow" style={{ background: "none", border: "none", padding: 0, marginBottom: "1.3rem" }}>← Front page</button>
-            <h2 className="dbl-bot" style={{ fontFamily: FD, fontWeight: 900, fontSize: "2.5rem", color: C.ink, margin: "0 0 1.6rem", paddingBottom: ".6rem" }}>{route.value}</h2>
+            <h2 className="dbl-bot" style={{ fontFamily: FD, fontWeight: 700, fontSize: "2.5rem", color: C.ink, margin: "0 0 1.6rem", paddingBottom: ".6rem" }}>{route.value}</h2>
             {catPosts.map((p) => <ListItem key={p.id} p={p} />)}
           </section>
         )}
@@ -980,7 +981,7 @@ export default function StudyGazette() {
               <button onClick={() => goTo({ name: "cat", value: cur.category })} style={{ background: "none", border: "none", padding: 0, fontFamily: FM, letterSpacing: ".12em", textTransform: "uppercase", fontSize: 11, color: C.brick, cursor: "pointer" }}>{cur.category}</button>
               {"  ·  " + fmt(cur.created) + "  ·  " + readMin(cur.body)}
             </div>
-            <h1 className="dbl-bot" style={{ fontFamily: FD, fontWeight: 900, fontSize: "clamp(2rem,5vw,2.9rem)", color: C.ink, lineHeight: 1.12, margin: "0 0 1.6rem", paddingBottom: "1rem" }}>{cur.title}</h1>
+            <h1 className="dbl-bot" style={{ fontFamily: FD, fontWeight: 700, fontSize: "clamp(2rem,5vw,2.9rem)", color: C.ink, lineHeight: 1.12, margin: "0 0 1.6rem", paddingBottom: "1rem" }}>{cur.title}</h1>
             <div style={{ fontSize: "1.05rem" }}><Body text={cur.body} onImg={setLightbox} /></div>
             {(cur.tags || []).length > 0 && (
               <div style={{ marginTop: "2.4rem", paddingTop: "1.1rem", borderTop: `1px solid ${C.rule}` }}>
@@ -999,7 +1000,7 @@ export default function StudyGazette() {
                           <div style={{ height: 120, borderBottom: `1px solid ${C.frame}`, overflow: "hidden" }}><ProjImage src={p.thumb} seed={p.id + p.title} alt={p.title} /></div>
                           <div style={{ padding: "11px 13px 13px" }}>
                             <div className="kicker" style={{ marginBottom: 6, fontSize: 10, color: C.brick }}>{dir}</div>
-                            <h3 className="ttl" style={{ fontFamily: FD, fontWeight: 700, fontSize: "1.04rem", color: C.ink, lineHeight: 1.25, margin: 0 }}>{p.title}</h3>
+                            <h3 className="ttl" style={{ fontFamily: FD, fontWeight: 600, fontSize: "1.04rem", color: C.ink, lineHeight: 1.25, margin: 0 }}>{p.title}</h3>
                           </div>
                         </div>
                       </div>

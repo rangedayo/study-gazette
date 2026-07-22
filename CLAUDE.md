@@ -4,12 +4,14 @@
 
 ## 구조 (어디에 뭐가 있나)
 - 앱 전체가 사실상 `app/Gazette.jsx` 한 파일. `app/page.jsx`가 이걸 렌더한다.
-- **팔레트는 파일 상단 `C` 상수, 폰트는 `FD`(Playfair, 제목)·`FB`(Inter, 본문)·`FM`(DM Mono) 상수**에 정의 — 색/폰트는 항상 여기 값을 재사용하고 하드코딩하지 말 것.
+- **팔레트는 파일 상단 `C` 상수, 폰트는 `FD`(제목)·`FB`(본문)·`FM`(라벨·키커·태그) 상수**에 정의 — 셋 다 `Newsreader`(세리프)로 통일(thinkingmachines.ai 톤 참고). 모노는 `FC`(`DM Mono`) 상수로 **코드(인라인/코드블록)에만** 쓴다. 색/폰트는 항상 여기 값을 재사용하고 하드코딩하지 말 것.
 - 글 데이터는 `data/posts.json`(Notion 동기화 결과), 폴백용 `DEMO` 배열은 파일 상단에 인라인.
 - 프로젝트 **텍스트**는 `data/projects.json`(Notion 동기화 결과)에서 읽고, **스크린샷**은 코드의 `PROJECT_SHOTS` 맵(id→경로)과 id로 병합한다(`const PROJECTS = projects.json + PROJECT_SHOTS`).
 
 ## 코드 규칙 (코드만 봐선 모를 것들)
 - **본문 글자 크기는 `.97rem`로 통일**. 프로젝트 요약·본문(`.g-p`)·Highlights 전부 동일하게 맞춘다.
+- **배경·카드 색**: 페이지·검색창 바탕은 흰색(`C.bg` `#FFFFFF`), 종이 표면(코드블록·표·`.chip` 등)은 `C.panel`(웜아이보리 `#FBF8EF`). **글·프로젝트 카드는 전용 `C.card`(`#FFFEF9`)** — 글 카드·AI Search 질문 칩(`.chip`)·프로젝트 카드가 이 한 값으로 함께 움직인다.
+- **제목 굵기 위계**: 제호 "The Study Gazette" **800** · 글/페이지/프로젝트 제목 **700** · 섹션(`##`)·카드 제목 **600** · 본문 400. Newsreader는 `@import`에 400·500·600·700·800(+이탤릭)을 로드한다.
 - **라우팅은 URL 해시 기반**(`#cat:`/`#post:`/`#project:`). `history.state`에 화면 정보를 저장하지 말 것 — App Router가 덮어써서 뒤로가기가 깨진다. 화면 전환은 `goTo`(해시 push)로, 인페이지 뒤로가기는 `goBack`(`history.back`)으로 처리.
 - **본문 마크다운 파서는 자체 구현**(`Body` 함수). 지원: `##` 제목, `**굵게**`, `` `코드` ``, `> 인용`, `- 목록`, **이미지(`![캡션](경로)`)**. 이미지는 캡션과 함께 렌더되고 클릭하면 라이트박스로 원본을 본다(`onImg`→`setLightbox`).
 - **글 이미지 동기화**: Notion 글에 넣은 사진은 `scripts/sync-notion.mjs`가 받아 `public/posts/<글id>/NN.png`로 저장하고 본문에 `![]()`를 삽입한다(Notion URL은 만료되므로 파일로 보관). 워크플로가 `public/posts`도 함께 커밋한다.
