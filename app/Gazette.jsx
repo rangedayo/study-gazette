@@ -894,7 +894,7 @@ export default function StudyGazette() {
                     <div className="kicker" style={{ position: "absolute", top: 12, left: 12, background: C.bg, border: `1.5px solid ${C.frame}`, padding: "3px 11px" }}>No. {String(i + 1).padStart(2, "0")}</div>
                   </div>
                   <div style={{ padding: "1.6rem 1.8rem" }}>
-                    <div className="kicker" style={{ marginBottom: 8 }}>{pr.kind}</div>
+                    <div className="kicker" style={{ marginBottom: 8 }}>{pr.kind} · {fmt(pr.updated || pr.created)}</div>
                     <h2 style={{ fontFamily: FD, fontWeight: 700, fontSize: "1.45rem", color: C.ink, lineHeight: 1.2, margin: "0 0 .7rem" }}>{pr.title}</h2>
                     <p style={{ margin: "0 0 1rem", color: C.body, lineHeight: 1.75, fontSize: "1rem" }}>{pr.summary}</p>
                     <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: "1rem" }}>
@@ -913,7 +913,7 @@ export default function StudyGazette() {
         {route.name === "project" && curProj && (
           <article style={{ maxWidth: 760, margin: "0 auto", padding: "2.8rem 0 4rem" }}>
             <button onClick={goBack} className="eyebrow" style={{ background: "none", border: "none", padding: 0, marginBottom: "1.8rem", cursor: "pointer" }}>← Back to projects</button>
-            <div className="kicker" style={{ marginBottom: "1rem" }}>{curProj.kind}</div>
+            <div className="kicker" style={{ marginBottom: "1rem" }}>{curProj.kind} · {fmt(curProj.updated || curProj.created)}</div>
             <h1 style={{ fontFamily: FD, fontWeight: 700, fontSize: "clamp(1.9rem,4.5vw,2.7rem)", color: C.ink, lineHeight: 1.15, margin: "0 0 1.4rem" }}>{curProj.title}</h1>
             {curProj.shots?.length
               ? <div className="dbl-top dbl-bot proj-shots">

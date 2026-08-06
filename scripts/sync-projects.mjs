@@ -212,6 +212,7 @@ async function main() {
     const slug = getRichText(props, "Slug");
     const id = slug || page.id.replace(/-/g, "");
     const created = getDate(props, "Date") ?? new Date(page.created_time).getTime();
+    const updated = new Date(page.last_edited_time).getTime();
 
     // 본문 이미지 폴더만 비운다 (히어로 스크린샷은 public/projects/ 최상위라 안전)
     await rm(resolve(IMG_ROOT, id), { recursive: true, force: true });
@@ -228,6 +229,7 @@ async function main() {
       summary: getRichText(props, "Summary"),
       pinned: getCheckbox(props, "Pinned"),
       created,
+      updated,
       highlights: splitLines(getRichText(props, "Highlights")),
       stack: getMultiSelect(props, "Stack"),
       links,
