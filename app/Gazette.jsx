@@ -8,7 +8,7 @@ import PROJECTS_DATA from "../data/projects.json";
 /* 승인된 문서형 디자인. 글·프로젝트 원고는 Notion 동기화 데이터를 그대로 읽는다. */
 const C = {
   bg: "#FFFFFF", panel: "#F6F6F7", card: "#FFFFFF", ink: "#181818", body: "#303034", mute: "#66666C",
-  rule: "#E6E6E8", frame: "#E6E6E8", hover: "#EFEFF0", accentD: "#4C5E68",
+  rule: "#E6E6E8", frame: "#E6E6E8", hover: "#EFEFF0", accentD: "#386457", accentSoft: "#EDF4F0",
   mustard: "#4C5E68", brick: "#66666C", tintM: "#EFEFF0", tintB: "#F6F6F7",
 };
 const FD = "'Inter', 'Noto Sans KR', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
@@ -502,7 +502,7 @@ export default function StudyGazette() {
 
   const theme = {
     "--bg": C.bg, "--panel": C.panel, "--card": C.card, "--ink": C.ink, "--body": C.body,
-    "--muted": C.mute, "--line": C.rule, "--hover": C.hover, "--accent": C.accentD,
+    "--muted": C.mute, "--line": C.rule, "--hover": C.hover, "--accent": C.accentD, "--accent-soft": C.accentSoft,
     "--sans": FB, "--heading-font": FD, "--label-font": FM, "--code-font": FC,
   };
   const studyRoute = { name: "cat", value: studyCategory };
