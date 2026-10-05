@@ -1,33 +1,20 @@
 "use client";
 
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import "./gazette.css";
 import POSTS_DATA from "../data/posts.json";
 import PROJECTS_DATA from "../data/projects.json";
 
-/* ════════════════════════════════════════════════════════════
-   The Study Gazette — 읽기 전용 전시 페이지 (포트폴리오 + 공부 정리)
-   디자인: 활판 인쇄소(letterpress) 골격 + 차분한 슬레이트/그레이지 색감
-   - 슬레이트블루 #5F7480 (메인) / 클레이 #9B7568 (포인트) / 쿨차콜 #2C313A (잉크)
-   - 그레이지 바탕 #EBE9E3, 연한 그레이지 테두리 #C6C0B4, 이중 규칙선, 표제 구조
-   - display·body: Newsreader(세리프 통일, 폴백 Georgia) / 캡션: DM Mono
-   데이터: knowledge_garden 에디터의 저장소를 그대로 읽음 (글쓰기는 거기서)
-
-   페이지 구성
-   - Front Page : Featured + Latest 목록 + 사이드바(About 티저 · Categories)
-   - About      : 편집자 소개 전용 페이지 (임시 내용, 추후 본인이 채움)
-   - Archive    : AI 사서 챗봇 — 질문하면 관련 글을 카드로 추천
-   - 상단 내비 아래 전용 검색 바(키워드 즉시 필터) · ⌘K 포커스
-   ════════════════════════════════════════════════════════════ */
-
+/* 승인된 문서형 디자인. 글·프로젝트 원고는 Notion 동기화 데이터를 그대로 읽는다. */
 const C = {
-  bg: "#FFFFFF", panel: "#FBF8EF", card: "#FFFEF9", ink: "#2C313A", body: "#50545C", mute: "#928F86",
-  rule: "#D5D1C8", mustard: "#5F7480", brick: "#9B7568", tintM: "#DEE3E3", tintB: "#E7DDD6",
-  frame: "#C6C0B4", accentD: "#4C5E68",
+  bg: "#FFFFFF", panel: "#F6F6F7", card: "#FFFFFF", ink: "#181818", body: "#303034", mute: "#66666C",
+  rule: "#E6E6E8", frame: "#E6E6E8", hover: "#EFEFF0", accentD: "#4C5E68",
+  mustard: "#4C5E68", brick: "#66666C", tintM: "#EFEFF0", tintB: "#F6F6F7",
 };
-const FD = "'Newsreader', Georgia, serif";
-const FB = "'Newsreader', Georgia, serif";
-const FM = "'Newsreader', Georgia, serif";       // 라벨·키커·태그도 세리프로 통일 (참고 링크 방식)
-const FC = "'DM Mono', ui-monospace, monospace";  // 모노는 코드(인라인/코드블록)에만
+const FD = "'Inter', 'Noto Sans KR', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+const FB = FD;
+const FM = FD;
+const FC = "'DM Mono', ui-monospace, 'Cascadia Code', Consolas, monospace";
 
 const GitHubMark = () => (
   <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
@@ -62,7 +49,9 @@ const encodeRoute = (r) => {
 };
 const decodeRoute = (hash) => {
   const s = (hash || "").replace(/^#/, "");
-  if (!s) return { name: "home" };
+  if (!s || s === "front") return { name: "home" };
+  if (s === "search") return { name: "archive" };
+  if (s === "profile") return { name: "about" };
   if (s.startsWith("cat:")) return { name: "cat", value: decodeURIComponent(s.slice(4)) };
   if (s.startsWith("post:")) return { name: "post", id: s.slice(5) };
   if (s.startsWith("project:")) return { name: "project", id: s.slice(8) };
@@ -130,8 +119,8 @@ function Mermaid({ chart }) {
     (async () => {
       try {
         const mermaid = (await import("mermaid")).default;
-        mermaid.initialize({ startOnLoad: false, theme: "base", securityLevel: "loose",
-          fontFamily: "'DM Mono', ui-monospace, monospace" });
+        mermaid.initialize({ startOnLoad: false, theme: "neutral", securityLevel: "loose",
+          fontFamily: FB });
         const { svg } = await mermaid.render(idRef.current, chart);
         if (!cancelled) setSvg(svg);
       } catch (e) { if (!cancelled) setSvg(""); }
@@ -232,8 +221,8 @@ function Body({ text, onImg }) {
         </div>
       );
     }
-    if (n.kind === "h3") return <h3 key={k} className="g-h3">{inlineMd(n.text)}</h3>;
-    if (n.kind === "h2") return <h2 key={k} className="g-h2">{inlineMd(n.text)}</h2>;
+    if (n.kind === "h3") return <h3 key={k} id={n.headingId} className="g-h3">{inlineMd(n.text)}</h3>;
+    if (n.kind === "h2") return <h2 key={k} id={n.headingId} className="g-h2">{inlineMd(n.text)}</h2>;
     if (n.kind === "quote") return <blockquote key={k} className="g-quote">{inlineMd(n.text)}</blockquote>;
     return <p key={k} className="g-p">{inlineMd(n.text)}</p>;
   };
@@ -319,7 +308,7 @@ function Body({ text, onImg }) {
       items.push({ kind: "table", depth, header, rows });
       continue;
     }
-    items.push(classifyLine(rawLines[i]));
+    items.push({ ...classifyLine(rawLines[i]), headingId: "section-" + i });
   }
   // 깊이가 한 번에 1단계 넘게 건너뛰지 않도록 정규화. 빈 줄도 클램프하되
   // prev(직전 깊이)는 비-빈줄에서만 갱신 — 빈 줄이 깊이 흐름을 흔들지 않게.
@@ -339,17 +328,48 @@ function Body({ text, onImg }) {
   return <>{renderNodes(buildTree(items, 0, 0))}</>;
 }
 
-const clean = (b) => String(b).replace(/```[\s\S]*?```/g, " ").replace(/[#>*`\[\]▸•]/g, "").replace(/\s+/g, " ").trim();
-const fmt = (t) => new Date(t).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-const readMin = (b) => Math.max(1, Math.round(clean(b).length / 350)) + " min read";
+const clean = (b) => String(b || "").replace(/```[\s\S]*?```/g, " ").replace(/!\[[^\]]*\]\([^)]*\)/g, "").replace(/^#{1,6}\s+.*$/gm, "").replace(/[*>`|]/g, "").replace(/\s+/g, " ").trim();
+const fmt = (t) => new Date(t).toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric", timeZone: "Asia/Seoul" });
+const readMin = (b) => Math.max(1, Math.ceil(String(b || "").length / 600)) + "분 읽기";
 
-/* 돋보기 아이콘 */
-const Magnifier = ({ size = 13, color = C.ink, sw = 1.3 }) => (
-  <svg width={size} height={size} viewBox="0 0 14 14" fill="none" style={{ flexShrink: 0 }} aria-hidden="true">
-    <circle cx="6" cy="6" r="4.5" stroke={color} strokeWidth={sw} />
-    <line x1="9.5" y1="9.5" x2="13" y2="13" stroke={color} strokeWidth={sw} strokeLinecap="round" />
-  </svg>
-);
+// Body와 같은 줄 번호를 사용한다. 코드 블록 안의 #은 목차에서 제외한다.
+const headingsFor = (text) => {
+  let inCode = false;
+  return String(text || "").split("\n").flatMap((line, index) => {
+    if (/^[ \t]*```/.test(line)) { inCode = !inCode; return []; }
+    if (inCode) return [];
+    const item = classifyLine(line);
+    return ["h2", "h3"].includes(item.kind) ? [{ id: "section-" + index, text: item.text, level: item.kind }] : [];
+  });
+};
+
+function RouteLink({ to, goTo, children, onClick, ...props }) {
+  return <a {...props} href={"#" + (encodeRoute(to) || "front")} onClick={(e) => {
+    if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    e.preventDefault(); goTo(to); onClick?.(e);
+  }}>{children}</a>;
+}
+
+function PostCard({ p, goTo }) {
+  return <RouteLink className={"post-card" + (p.thumb ? "" : " no-image")} to={{ name: "post", id: p.id }} goTo={goTo}>
+    <div><div className="card-meta">{fmt(p.updated)} · {readMin(p.body)}</div><h2>{p.title}</h2>
+      <p className="card-excerpt">{clean(p.body).slice(0, 210)}</p>
+      <div className="card-tags">{(p.tags || []).slice(0, 3).map(t => <span key={t}>#{t}</span>)}</div>
+    </div>
+    {p.thumb && <div className="thumbnail"><ProjImage src={p.thumb} seed={p.id} alt={p.title + " 커버"} /></div>}
+  </RouteLink>;
+}
+
+function TocLinks({ headings, active }) {
+  return headings.map(h => <a key={h.id} href={"#" + h.id} className={active === h.id ? "active" : undefined} aria-current={active === h.id ? "location" : undefined} onClick={e => {
+    e.preventDefault();
+    const target = document.getElementById(h.id);
+    if (!target) return;
+    for (let parent = target.parentElement; parent; parent = parent.parentElement) if (parent.tagName === "DETAILS") parent.open = true;
+    target.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth", block: "start" });
+    target.tabIndex = -1; target.focus({ preventScroll: true });
+  }}>{inlineMd(h.text)}</a>);
+}
 
 export default function StudyGazette() {
   const [posts, setPosts] = useState(null);
@@ -362,26 +382,11 @@ export default function StudyGazette() {
   const [chatResult, setChatResult] = useState(null);
   const [chatLoading, setChatLoading] = useState(false);
   const [chatError, setChatError] = useState(null);
-  const [showAll, setShowAll] = useState(false);
-
-  /* 검색창 태그 자동완성 */
-  const [acOpen, setAcOpen] = useState(false);
-  const [acIdx, setAcIdx] = useState(-1);
+  const [activeHeading, setActiveHeading] = useState(null);
 
   useEffect(() => {
     const arr = Array.isArray(POSTS_DATA) && POSTS_DATA.length ? POSTS_DATA : DEMO;
     setPosts(arr.map((x) => ({ category: "기타", pinned: false, tags: [], ...x })));
-  }, []);
-
-  /* ⌘K / Ctrl+K → 메인 검색창 포커스 */
-  useEffect(() => {
-    const h = (e) => {
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
-        e.preventDefault(); document.getElementById("gz-main-search")?.focus();
-      }
-    };
-    window.addEventListener("keydown", h);
-    return () => window.removeEventListener("keydown", h);
   }, []);
 
   /* 라이트박스: Esc로 닫기 */
@@ -412,19 +417,6 @@ export default function StudyGazette() {
     return Object.entries(m).sort((a, b) => b[1] - a[1]);
   }, [posts]);
 
-  /* 전 글의 태그 모음 (빈도순) */
-  const allTags = useMemo(() => {
-    const m = {}; (posts || []).forEach((p) => (p.tags || []).forEach((t) => (m[t] = (m[t] || 0) + 1)));
-    return Object.entries(m).sort((a, b) => b[1] - a[1]).map(([t, n]) => ({ tag: t, n }));
-  }, [posts]);
-
-  /* 입력값에 매칭되는 태그 (자동완성용, 최대 6개) */
-  const acTags = useMemo(() => {
-    const q = chatInput.trim().toLowerCase();
-    if (!q) return [];
-    return allTags.filter(({ tag }) => tag.toLowerCase().includes(q)).slice(0, 6);
-  }, [chatInput, allTags]);
-
   /* 모든 화면 전환은 goTo를 거쳐 URL 해시에 기록 → 브라우저 뒤로가기가 정확히 복원 */
   const goTo = useCallback((r) => {
     const h = encodeRoute(r);
@@ -433,13 +425,8 @@ export default function StudyGazette() {
     setRoute(r);
     window.scrollTo({ top: 0 });
   }, []);
-  const open = useCallback((id) => goTo({ name: "post", id }), [goTo]);
-  const openProject = useCallback((id) => goTo({ name: "project", id }), [goTo]);
-  const goHome = () => goTo({ name: "home" });
-  const goto = (name) => goTo({ name });
   /* 인페이지 뒤로가기 = 브라우저 뒤로가기와 동일하게 직전 화면으로 */
   const goBack = () => { if (window.history.length > 1) window.history.back(); else goTo({ name: "home" }); };
-  const backLabel = "← Back";
   const cur = (posts || []).find((p) => p.id === route.id);
   const curProj = PROJECTS.find((p) => p.id === route.id);
   const catPosts = route.name === "cat" ? sorted.filter((p) => p.category === route.value) : [];
@@ -453,7 +440,8 @@ export default function StudyGazette() {
   /* ── AI 사서: 질문 → 관련 글 id 추천 ── */
   const runAISearch = useCallback(async (q) => {
     const question = (q ?? chatInput).trim();
-    if (!question || chatLoading) return;
+    if (chatLoading) return;
+    if (!question) { setChatQuery(""); setChatResult(null); setChatError(null); return; }
     setChatLoading(true); setChatError(null); setChatResult(null); setChatQuery(question);
     try {
       const res = await fetch("/api/search", {
@@ -473,567 +461,196 @@ export default function StudyGazette() {
 
   const suggestions = ["언어모델 관련 글 보여줘", "MLOps 배포 이야기", "AI 코딩 도구 정리", "이미지 생성모델 글"];
 
-  /* 메인 검색창에서 Archive로 이동하며 AI 검색 실행 */
-  const submitFromMain = (q) => {
-    const question = (q ?? chatInput).trim();
-    if (!question) return;
-    setAcOpen(false); setAcIdx(-1);
-    goTo({ name: "archive" });
-    setTimeout(() => runAISearch(question), 80);
-  };
+  const reading = route.name === "post" || route.name === "project";
+  const inCategory = route.name === "cat";
+  const activeCategory = inCategory ? route.value : cur?.category;
+  const studyCategory = activeCategory || (cats.some(([c]) => c === "비전 모델") ? "비전 모델" : cats[0]?.[0]);
+  const headings = useMemo(() => {
+    if (route.name === "post") return headingsFor(cur?.body);
+    if (route.name === "project" && curProj) return [
+      ...headingsFor(curProj.body),
+      ...(curProj.highlights?.length ? [{ id: "project-highlights", text: "Highlights" }] : []),
+      ...(curProj.stack?.length ? [{ id: "project-stack", text: "Stack" }] : []),
+      ...(curProj.links?.length ? [{ id: "project-links", text: "Links" }] : []),
+    ];
+    return [];
+  }, [route.name, cur, curProj]);
 
-  /* 자동완성 키보드 조작 */
-  const onMainKeyDown = (e) => {
-    if (acOpen && acTags.length) {
-      if (e.key === "ArrowDown") { e.preventDefault(); setAcIdx((i) => (i + 1) % acTags.length); return; }
-      if (e.key === "ArrowUp") { e.preventDefault(); setAcIdx((i) => (i - 1 + acTags.length) % acTags.length); return; }
-      if (e.key === "Enter" && acIdx >= 0) { e.preventDefault(); const t = acTags[acIdx].tag; setChatInput(t); submitFromMain(t); return; }
-      if (e.key === "Escape") { setAcOpen(false); setAcIdx(-1); return; }
-    }
-    if (e.key === "Enter" && chatInput.trim()) submitFromMain();
-  };
+  useEffect(() => {
+    setActiveHeading(headings[0]?.id || null);
+    if (!headings.length) return;
+    const observer = new IntersectionObserver(entries => {
+      const visible = entries.filter(entry => entry.isIntersecting).sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
+      if (visible.length) setActiveHeading(visible[0].target.id);
+    }, { rootMargin: "-5% 0px -65% 0px" });
+    headings.forEach(h => { const el = document.getElementById(h.id); if (el) observer.observe(el); });
+    return () => observer.disconnect();
+  }, [headings]);
+
+  useEffect(() => {
+    const shortcut = e => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault(); goTo({ name: "archive" });
+        requestAnimationFrame(() => document.getElementById("archive-query")?.focus());
+      }
+    };
+    window.addEventListener("keydown", shortcut);
+    return () => window.removeEventListener("keydown", shortcut);
+  }, [goTo]);
 
   if (!posts) return <div style={{ minHeight: "100vh", background: C.bg }} />;
 
-  const css = `
-    @import url('https://fonts.googleapis.com/css2?family=Newsreader:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400;1,600&family=DM+Mono:wght@400;500&display=swap');
-    .gz *{box-sizing:border-box} .gz{background:${C.bg};color:${C.body};font-family:${FB};-webkit-font-smoothing:antialiased;
-      background-image:linear-gradient(${C.ink}08 1px,transparent 1px);background-size:100% 30px}
-    .gz button{cursor:pointer;font-family:${FB}} .gz a{cursor:pointer}
-    .eyebrow{font-family:${FB};font-size:11px;letter-spacing:.32em;text-transform:uppercase;color:${C.brick};font-weight:600}
-    .kicker{font-family:${FM};font-size:11px;letter-spacing:.12em;color:${C.mute};text-transform:uppercase}
-    .dbl-top{border-top:3px double ${C.ink}} .dbl-bot{border-bottom:3px double ${C.ink}}
-    .g-h2{font-family:${FD};font-weight:600;font-size:1.5rem;color:${C.ink};margin:1.9rem 0 .6rem;line-height:1.25}
-    .g-h3{font-family:${FD};font-weight:600;font-size:1.2rem;color:${C.ink};margin:1.4rem 0 .4rem}
-    .g-p{margin:.7rem 0;line-height:1.85;font-size:.97rem;color:${C.body}}
-    .g-ul{margin:.6rem 0 1rem;padding:0;list-style:none}
-    .g-ul>li{position:relative;padding-left:1.3rem;margin:.4rem 0;line-height:1.7;font-size:.97rem;color:${C.body}}
-    .g-ul>li:before{content:"•";position:absolute;left:0;color:${C.mustard};font-weight:700}
-    .g-bull>li:before{content:"•"}
-    .g-ol{margin:.6rem 0 1rem;padding-left:1.55rem;list-style:decimal}
-    .g-ol>li{margin:.4rem 0;line-height:1.7;padding-left:.2rem;font-size:.97rem;color:${C.body}}
-    .g-ol>li::marker{color:${C.mustard};font-weight:700}
-    .g-ul .g-ul,.g-ul .g-ol,.g-ol .g-ul,.g-ol .g-ol{margin:.3rem 0 .35rem}
-    .g-sub{margin-left:1.3rem}
-    .g-toggle{margin:.7rem 0;border-left:2px solid ${C.frame};padding:.05rem 0 .05rem .75rem}
-    .g-toggle>summary{cursor:pointer;font-weight:600;color:${C.ink};font-size:.97rem;list-style:none;outline:none}
-    .g-toggle>summary::-webkit-details-marker{display:none}
-    .g-toggle>summary:before{content:"▸";color:${C.mustard};font-weight:700;margin-right:.45rem;display:inline-block;transition:transform .15s ease}
-    .g-toggle[open]>summary:before{transform:rotate(90deg)}
-    .g-toggle-body{margin:.35rem 0 .15rem}
-    .g-quote{border-left:3px solid ${C.mustard};margin:1.2rem 0;padding:.3rem 0 .3rem 1.1rem;color:${C.ink};font-style:italic;font-family:${FD};font-size:1.16rem}
-    .g-code{background:${C.tintM};color:${C.ink};padding:.08em .4em;border-radius:2px;font-size:.9em;font-family:${FC}}
-    .g-pre{background:${C.panel};color:${C.ink};border:1px solid ${C.rule};border-radius:3px;padding:1rem;overflow-x:auto;font-size:.85rem;line-height:1.6;margin:1rem 0;font-family:${FC}}
-    .g-fig{margin:1.7rem 0;text-align:center}
-    .g-img{max-width:100%;height:auto;border:1px solid ${C.frame};border-radius:4px;cursor:zoom-in;box-shadow:0 6px 18px rgba(44,49,58,.12);display:block;margin:0 auto}
-    .g-cap{margin-top:.5rem;font-family:${FM};font-size:.8rem;color:${C.ink};opacity:.7}
-    .g-mermaid{margin:1.6rem 0;padding:1.2rem;background:${C.panel};border:1px solid ${C.frame};border-radius:3px;text-align:center;overflow-x:auto}
-    .g-table-wrap{margin:1.5rem 0;overflow-x:auto;border:1px solid ${C.frame};border-radius:3px}
-    .g-table{border-collapse:collapse;width:100%;font-family:${FB};font-size:.92rem;color:${C.body}}
-    .g-table th,.g-table td{border:1px solid ${C.frame};padding:.5rem .75rem;text-align:left;vertical-align:top;line-height:1.6}
-    .g-table th{background:${C.panel};color:${C.ink};font-family:${FD};font-weight:700;white-space:nowrap}
-    .g-table tbody tr:nth-child(even) td{background:rgba(44,49,58,.025)}
-    .g-mermaid svg{max-width:100%;height:auto}
-    .navlink{font-family:${FB};font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:${C.body};padding:.3rem 0;background:none;border:none;position:relative}
-    .navlink:hover{color:${C.ink}} .navlink.on{color:${C.ink}}
-    .navlink.on:after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:2px;background:${C.mustard}}
-    .ed{background:${C.mustard};color:${C.bg};border:1.5px solid ${C.accentD};border-radius:2px;padding:11px 26px;font-family:${FB};font-size:13px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;transition:background .3s ease}
-    .ed:hover{background:${C.brick}} .ed:disabled{opacity:.55;cursor:default}
-    .chip{font-family:${FM};font-size:12px;color:${C.body};background:${C.card};border:1px solid ${C.rule};border-radius:2px;padding:6px 12px;transition:border-color .3s ease,color .3s ease,background .3s ease}
-    .chip:hover{border-color:${C.ink};color:${C.ink};background:${C.tintM}}
+  const theme = {
+    "--bg": C.bg, "--panel": C.panel, "--card": C.card, "--ink": C.ink, "--body": C.body,
+    "--muted": C.mute, "--line": C.rule, "--hover": C.hover, "--accent": C.accentD,
+    "--sans": FB, "--heading-font": FD, "--label-font": FM, "--code-font": FC,
+  };
+  const studyRoute = { name: "cat", value: studyCategory };
+  const navItems = [
+    { label: "Front Page", to: { name: "home" }, active: route.name === "home" },
+    { label: "Study Notes", to: studyRoute, active: inCategory || route.name === "post" },
+    { label: "Projects", to: { name: "projects" }, active: route.name === "projects" || route.name === "project" },
+    { label: "Profile", to: { name: "about" }, active: route.name === "about" },
+    { label: "Search", to: { name: "archive" }, active: route.name === "archive" },
+  ];
 
-    /* 글 카드 hover ③ — 떠오름 + 잉크 그림자 + 제목 색 */
-    .hov{cursor:pointer;transition:transform .3s ease,box-shadow .3s ease}
-    .hov .ttl{transition:color .3s ease}
-    .hov:hover{transform:translateY(-4px);box-shadow:0 10px 24px rgba(44,49,58,.12)}
-    .hov:hover .ttl{color:${C.brick} !important}
+  return <div className={"gz" + (!reading && !inCategory ? " wide-mode" : "") + (inCategory ? " category-mode" : "")} style={theme}>
+    <header className="masthead">
+      <div className="est">EST. 2026 — STUDY NOTES &amp; PORTFOLIO</div>
+      <RouteLink className="brand" to={{ name: "home" }} goTo={goTo}>The Study Gazette</RouteLink>
+      <div className="tagline">Papers, projects &amp; half-formed theories</div>
+    </header>
+    <nav className="site-nav" aria-label="사이트 탐색"><div className="nav-inner">
+      {navItems.map(n => <RouteLink key={n.label} to={n.to} goTo={goTo} className={n.active ? "on" : undefined} aria-current={n.active ? "page" : undefined}>{n.label}</RouteLink>)}
+      <span className="nav-count">{posts.length} entries on file</span>
+    </div></nav>
 
-    /* 프로젝트 카드 hover ③ — 떠오름 + 잉크 그림자 + 화살표 */
-    .proj{cursor:pointer;transition:transform .3s ease,box-shadow .3s ease}
-    .proj:hover{transform:translateY(-4px);box-shadow:0 12px 28px rgba(44,49,58,.13)}
-    .proj h2{transition:color .3s ease}
-    .proj:hover h2{color:${C.brick} !important}
-    .proj .proj-go{font-family:${FM};font-size:12px;color:${C.mustard};opacity:0;transform:translateX(-6px);transition:opacity .3s ease,transform .3s ease}
-    .proj:hover .proj-go{opacity:1;transform:translateX(0)}
-    .proj-thumb{position:relative;overflow:hidden;border-right:1px solid ${C.frame};min-height:220px;background:${C.panel}}
-    .proj-thumb svg{width:100%;height:100%;display:block}
-    .proj-thumb img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:top center;display:block}
-    /* 프로젝트 스크린샷 페이퍼 타일 (상세 히어로) */
-    .proj-shots{display:grid;grid-template-columns:repeat(auto-fit,minmax(92px,1fr));gap:12px;align-items:start;background:${C.panel};padding:22px 18px;margin:0 0 2rem;overflow:hidden}
-    .proj-shots .tile{width:100%;aspect-ratio:9/16;padding:0;border:1px solid ${C.frame};border-radius:7px;overflow:hidden;background:#fff;box-shadow:0 6px 18px rgba(44,49,58,.13);cursor:zoom-in;transition:transform .2s ease,box-shadow .2s ease}
-    .proj-shots .tile:hover{transform:translateY(-3px);box-shadow:0 12px 26px rgba(44,49,58,.2)}
-    .proj-shots .tile img,.proj-shots .tile svg{width:100%;height:100%;object-fit:cover;object-position:top center;display:block}
-    /* 가로형 대시보드 (상세 히어로, 풀폭 한 장) */
-    .proj-wide{display:block;width:100%;padding:0;border-left:none;border-right:none;background:${C.panel};margin:0 0 2rem;cursor:zoom-in;overflow:hidden}
-    .proj-wide img{display:block;width:100%;height:auto}
-    .proj-wide svg{display:block;width:100%;height:300px}
-    /* 라이트박스 (원본 보기) */
-    .lb{position:fixed;inset:0;z-index:100;background:rgba(20,22,26,.85);display:flex;align-items:flex-start;justify-content:center;overflow:auto;padding:36px 20px;cursor:zoom-out;animation:lbfade .18s ease}
-    @keyframes lbfade{from{opacity:0}to{opacity:1}}
-    .lb img{max-width:min(1800px,97vw);max-height:96vh;width:auto;height:auto;border-radius:8px;box-shadow:0 24px 70px rgba(0,0,0,.55);cursor:default}
-    .lb-close{position:fixed;top:14px;right:20px;width:42px;height:42px;border:none;background:rgba(255,255,255,.12);color:#fff;font-size:26px;line-height:1;border-radius:50%;cursor:pointer;transition:background .2s ease}
-    .lb-close:hover{background:rgba(255,255,255,.25)}
-    .proj-link{font-family:${FM};font-size:12px;letter-spacing:.04em;color:${C.brick};border-bottom:1.5px solid ${C.brick};padding-bottom:1px;text-decoration:none;transition:color .3s ease,border-color .3s ease}
-    .proj-link:hover{color:${C.ink};border-color:${C.ink}}
-    .proj-link.off{color:${C.mute};border-color:${C.rule};cursor:default}
-    .lnk-cta{display:flex;align-items:center;gap:14px;text-decoration:none;border:1.5px solid ${C.frame};background:${C.panel};border-radius:3px;padding:14px 18px;transition:border-color .25s ease,background .25s ease,box-shadow .25s ease}
-    .lnk-cta:hover{border-color:${C.accentD};background:#FCFBF8;box-shadow:0 4px 14px rgba(44,49,58,.08)}
-    .lnk-cta .ic{flex:none;width:38px;height:38px;border-radius:50%;background:${C.ink};color:${C.bg};display:flex;align-items:center;justify-content:center;transition:background .25s ease}
-    .lnk-cta:hover .ic{background:${C.accentD}}
-    .lnk-cta .ic svg{width:20px;height:20px;display:block}
-    .lnk-cta .tx{flex:1;min-width:0}
-    .lnk-cta .t1{font-family:${FB};font-weight:600;color:${C.ink};font-size:.98rem;letter-spacing:.01em}
-    .lnk-cta .t2{font-size:.8rem;color:${C.body};margin-top:1px}
-    .lnk-cta .arr{flex:none;color:${C.brick};font-size:1.15rem;transition:transform .25s ease}
-    .lnk-cta:hover .arr{transform:translate(2px,-2px)}
-    .lnk-cta.off{cursor:default;opacity:.6}
-    .lnk-cta.off:hover{border-color:${C.frame};background:${C.panel};box-shadow:none}
-    .lnk-cta.off .ic{background:${C.mute}}
-    @media(max-width:760px){.proj{grid-template-columns:1fr !important}.proj-thumb{border-right:none !important;border-bottom:1px solid ${C.frame};min-height:160px}}
+    <div className="workspace">
+      {(reading || inCategory) && <aside className="sidebar" aria-label="카테고리와 글 탐색">
+        <div className="side-group"><div className="side-title">{route.name === "project" ? "Projects" : "Study Notes"}</div>
+          {route.name === "project"
+            ? <RouteLink to={{ name: "projects" }} goTo={goTo}>프로젝트 목록</RouteLink>
+            : cats.map(([c]) => <RouteLink key={c} className={activeCategory === c ? "active" : undefined} to={{ name: "cat", value: c }} goTo={goTo}>{c}</RouteLink>)}
+        </div>
+        <div className="side-group"><div className="side-title">{route.name === "project" ? "빌드 노트" : activeCategory}</div>
+          {route.name === "project" ? PROJECTS.map(p => <RouteLink key={p.id} className={"post-link" + (curProj?.id === p.id ? " active" : "")} to={{ name: "project", id: p.id }} goTo={goTo}>{p.title}</RouteLink>)
+            : sorted.filter(p => p.category === activeCategory).slice(0, 5).map(p => <RouteLink key={p.id} className={"post-link" + (cur?.id === p.id ? " active" : "")} to={{ name: "post", id: p.id }} goTo={goTo}>{p.title}</RouteLink>)}
+        </div>
+      </aside>}
 
-    /* Read more / Categories / nav 부드러운 색 전환 */
-    .readmore{transition:color .3s ease,border-color .3s ease}
-    .readmore:hover{color:${C.ink} !important;border-color:${C.ink} !important}
-    .cat-row{transition:color .3s ease,padding-left .3s ease}
-    .cat-row .cat-name{transition:color .3s ease}
-    .cat-row:hover{padding-left:6px}
-    .cat-row:hover .cat-name{color:${C.brick} !important}
-    .navlink{transition:color .25s ease}
-
-    /* 검색 자동완성 드롭다운 */
-    .ac-wrap{position:relative}
-    .ac-list{position:absolute;left:0;right:0;top:calc(100% + 4px);background:${C.panel};border:1.5px solid ${C.frame};border-radius:2px;z-index:40;max-height:240px;overflow-y:auto;box-shadow:0 8px 22px rgba(44,49,58,.10)}
-    .ac-item{display:flex;align-items:center;gap:8px;width:100%;text-align:left;background:none;border:none;border-bottom:1px solid ${C.rule};padding:9px 14px;font-family:${FM};font-size:13px;color:${C.body};cursor:pointer;transition:background .2s ease}
-    .ac-item:last-child{border-bottom:none}
-    .ac-item:hover,.ac-item.act{background:${C.tintM};color:${C.ink}}
-    .ac-hash{color:${C.mustard};font-weight:600}
-
-    /* 이전/다음 글 카드 — hover ② 좌측 머스터드 바 */
-    .pn-card{position:relative;display:flex;flex-direction:column;border:1px solid ${C.frame};background:${C.card};cursor:pointer;overflow:hidden}
-    .pn-card .pn-bar{position:absolute;left:0;top:0;bottom:0;width:0;background:${C.mustard};z-index:3;transition:width .3s ease}
-    .pn-card .pn-body{transition:padding-left .3s ease}
-    .pn-card .ttl{transition:color .3s ease}
-    .pn-card:hover .pn-bar{width:6px}
-    .pn-card:hover .pn-body{padding-left:6px}
-    .pn-card:hover .ttl{color:${C.brick} !important}
-
-    .search-cta:hover{background:${C.tintM}}
-    .ai-btn{transition:background .3s ease}
-    .ai-btn:hover{background:${C.ink} !important}
-    .gz-input{border:none;background:transparent;outline:none;color:${C.ink};font-family:${FB};letter-spacing:.01em;width:100%}
-    .gz-input::placeholder{color:${C.mute}}
-    /* 검색바 포커스 — 바탕 밝아짐 + 슬레이트 링 (쓰는 중 인지) */
-    .searchbar{transition:background .25s ease,border-color .25s ease,box-shadow .25s ease}
-    .searchbar:focus-within{background:#FFFFFF !important;border-color:${C.accentD} !important;box-shadow:0 0 0 3px rgba(95,116,128,.16)}
-    .blink{animation:bk 1s steps(2,start) infinite} @keyframes bk{to{opacity:.2}}
-    @media(max-width:820px){.grid2{grid-template-columns:1fr !important}.hide-sm{display:none !important}.masthead h1{font-size:2.6rem !important}}
-  `;
-
-  /* 머스터드/벽돌 톤 추상 동판화 일러스트 (실사진 대체, 제목에서 결정) */
-  /* Art, ProjImage 는 모듈 레벨로 이동 (파일 상단) */
-
-  /* 가로형 목록 아이템 (Front Page / 카테고리 / 검색 결과) */
-  const ListItem = ({ p }) => (
-    <article className="hov" style={{ display: "grid", gridTemplateColumns: "150px 1fr", gap: "1.5rem", padding: "1.4rem", marginBottom: "1.1rem", border: `1px solid ${C.frame}`, background: C.card }} onClick={() => open(p.id)}>
-      <div style={{ height: 120, border: `1px solid ${C.frame}`, overflow: "hidden" }}><ProjImage src={p.thumb} seed={p.id + p.title} alt={p.title} /></div>
-      <div>
-        <div className="kicker" style={{ marginBottom: 8 }}>{p.category} · {fmt(p.updated)}</div>
-        <h3 className="ttl" style={{ fontFamily: FD, fontWeight: 600, fontSize: "1.34rem", color: C.ink, lineHeight: 1.2, margin: "0 0 .5rem" }}>{p.title}</h3>
-        <p style={{ margin: 0, color: C.body, fontSize: ".9rem", lineHeight: 1.7, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{clean(p.body).slice(0, 150)}</p>
-        <div style={{ marginTop: ".7rem" }}>{(p.tags || []).slice(0, 3).map((t) => <span key={t} style={{ fontFamily: FM, fontSize: 11, color: C.mute, marginRight: 12 }}>#{t}</span>)}</div>
-      </div>
-    </article>
-  );
-
-  /* 세로형 카드 (AI 사서 추천 결과) */
-  const ResultCard = ({ p }) => (
-    <div className="hov" onClick={() => open(p.id)} style={{ background: C.card, border: `1px solid ${C.frame}`, borderRadius: 2, overflow: "hidden", cursor: "pointer", display: "flex", flexDirection: "column" }}>
-      <div style={{ height: 96, borderBottom: `1px solid ${C.frame}`, overflow: "hidden" }}><ProjImage src={p.thumb} seed={p.id + p.title} alt={p.title} /></div>
-      <div style={{ padding: "10px 13px 13px" }}>
-        <div className="kicker" style={{ marginBottom: 6, fontSize: 10 }}>{p.category}</div>
-        <h3 className="ttl" style={{ fontFamily: FD, fontWeight: 600, fontSize: "1.08rem", color: C.ink, lineHeight: 1.25, margin: "0 0 .4rem" }}>{p.title}</h3>
-        <p style={{ margin: 0, fontSize: ".86rem", color: C.body, lineHeight: 1.55, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{clean(p.body).slice(0, 96)}</p>
-        <div style={{ marginTop: 8 }}>{(p.tags || []).slice(0, 3).map((t) => <span key={t} style={{ fontFamily: FM, fontSize: 10, color: C.mute, marginRight: 10 }}>#{t}</span>)}</div>
-      </div>
-    </div>
-  );
-
-  return (
-    <div className="gz">
-      <style>{css}</style>
-
-      {/* ── 마스트헤드 (신문 제호 + 검색창) ── */}
-      <header className="masthead dbl-bot" style={{ textAlign: "center", padding: "2.4rem 1.5rem 1.6rem" }}>
-        <div className="kicker" style={{ marginBottom: ".9rem" }}>Est. 2026 — Study Notes &amp; Portfolio</div>
-        <h1 onClick={goHome} style={{ fontFamily: FD, fontWeight: 900, fontSize: "clamp(2.6rem,7vw,4.6rem)", color: C.ink, margin: 0, letterSpacing: "-.01em", lineHeight: .98, cursor: "pointer" }}>The Study Gazette</h1>
-        <div style={{ fontFamily: FD, fontStyle: "italic", fontSize: "1.05rem", color: C.brick, marginTop: ".7rem" }}>Papers, projects &amp; half-formed theories</div>
-
-        {route.name === "home" && (
-        <div className="ac-wrap" style={{ maxWidth: 600, margin: "1.5rem auto 0", textAlign: "left" }}>
-          <div className="searchbar" style={{ display: "flex", alignItems: "stretch", gap: 0, background: "#FFFFFF", border: `1.5px solid ${C.mustard}`, borderRadius: 2, overflow: "hidden" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 10, flex: 1, padding: "0 16px" }}>
-              <Magnifier size={15} color={C.mustard} sw={1.5} />
-              <input id="gz-main-search" className="gz-input" value={chatInput}
-                onChange={(e) => { setChatInput(e.target.value); setAcOpen(true); setAcIdx(-1); }}
-                onKeyDown={onMainKeyDown}
-                onFocus={() => setAcOpen(true)}
-                onBlur={() => setTimeout(() => setAcOpen(false), 150)}
-                placeholder="키워드, 또는 '파이썬 공부 기록 보여줘' 처럼 질문해주세요"
-                style={{ fontSize: 12, padding: "12px 0" }} />
+      <main className="content">
+        {route.name === "home" && <section className="page-section" id="home-view">
+          <header className="page-header"><h1 className="page-title">Front Page</h1><p className="page-intro">AI 엔지니어링을 공부하며 남기는 기록장입니다.</p></header>
+          <div className="front-layout"><div className="front-feed">
+            {featured && <RouteLink className="featured" to={{ name: "post", id: featured.id }} goTo={goTo}>
+              {featured.thumb && <div className="featured-image"><ProjImage src={featured.thumb} seed={featured.id} alt={featured.title + " 커버"} /></div>}
+              <div className="featured-content"><div className="featured-label"><span className="featured-badge">대표 글</span><span className="featured-category">{featured.category}</span></div>
+                <h2>{featured.title}</h2><p>{clean(featured.body).slice(0, 210)}</p><span className="read-issue">글 읽기 →</span>
+              </div>
+            </RouteLink>}
+            <div className="section-head"><h2 className="section-title">Latest Issues</h2><RouteLink className="quiet-link" to={studyRoute} goTo={goTo}>Study Notes 보기 →</RouteLink></div>
+            <div className="issue-grid">{rest.slice(0, 4).map(p => <RouteLink key={p.id} className="issue-card" to={{ name: "post", id: p.id }} goTo={goTo}>
+              <div className="card-meta">{p.category} · {fmt(p.updated)}</div><h3>{p.title}</h3><p>{clean(p.body).slice(0, 150)}</p>
+              <div className="card-tags">{(p.tags || []).slice(0, 2).map(t => <span key={t}>#{t}</span>)}</div>
+            </RouteLink>)}</div>
+            {PROJECTS.length > 0 && <><div className="section-head"><h2 className="section-title">Projects</h2><RouteLink className="quiet-link" to={{ name: "projects" }} goTo={goTo}>빌드 노트 보기 →</RouteLink></div>
+              <div className="issue-grid">{PROJECTS.map(p => <RouteLink key={p.id} className="issue-card" to={{ name: "project", id: p.id }} goTo={goTo}>
+                <div className="card-meta">{p.kind}</div><h3>{p.title}</h3><p>{p.summary}</p><span className="quiet-link">프로젝트 보기 →</span>
+              </RouteLink>)}</div></>}
+          </div><aside className="front-sidebar">
+            <div className="editor-box"><h2 className="section-title">The Editor</h2><img className="editor-photo" src="/profile.jpg" alt="최사랑" /><strong>최사랑</strong>
+              <p>논문 읽다 막힌 부분, 직접 만들어본 파이프라인, 헷갈리던 개념을 그때그때 담아두는 개인적인 공간이에요.</p>
+              <RouteLink className="quiet-link" to={{ name: "about" }} goTo={goTo}>Profile →</RouteLink>
             </div>
-            <button onClick={() => submitFromMain()} className="ai-btn"
-              style={{ background: C.mustard, border: "none", color: C.bg, fontFamily: FM, fontSize: 13, letterSpacing: ".06em", padding: "0 20px", cursor: "pointer", fontWeight: 600, whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: 6 }}>
-              <span style={{ fontSize: 11, opacity: .85 }}>✦</span> AI 검색
-            </button>
+            <div><h2 className="section-title">Categories</h2><div className="category-menu">{cats.map(([c, count]) => <RouteLink key={c} to={{ name: "cat", value: c }} goTo={goTo}>{c}<span>{count}</span></RouteLink>)}</div></div>
+          </aside></div>
+        </section>}
+
+        {route.name === "about" && <article className="page-section" id="profile-view">
+          <header className="page-header"><h1 className="page-title">최사랑</h1><p className="page-intro">Editor · MLOps &amp; ML Systems</p></header>
+          <div className="profile-layout"><img className="profile-portrait" src="/profile.jpg" alt="최사랑" /><div className="profile-content article-body">
+            <p>완성된 결론보다 ‘이해해가는 과정’을 남기는 데 의미를 둡니다.</p>
+            <p>비전공자로 출발해 AI 엔지니어로의 전환을 준비하고 있습니다. 매일 논문과 개념을 하나씩 제 것으로 만들며, 기초부터 차근차근 밟아가는 중입니다. 화려함을 좇기보다 객관적인 평가를 통해 시스템의 동작을 끝까지 검증하고 통제하는 방식을 지향합니다.</p>
+            <h2>관심 분야</h2><ul><li>MLOps 파이프라인 설계와 모델 배포 전략</li><li>머신러닝 시스템 아키텍처와 인프라</li><li>멀티모달 · 생성 모델의 동작 원리</li><li>AI 개발 도구와 코딩 에이전트 활용</li></ul>
+            <h2>연락</h2><div className="profile-contact"><a href="mailto:rangedayo@naver.com">rangedayo@naver.com</a><a href="https://github.com/rangedayo" target="_blank" rel="noreferrer">GitHub ↗</a></div>
+          </div></div>
+        </article>}
+
+        {route.name === "archive" && <section className="page-section" id="search-view">
+          <header className="page-header"><h1 className="page-title">무엇이 궁금하신가요?</h1><p className="page-intro">공부 기록에서 필요한 글을 찾아보세요.</p></header>
+          <form className="search-form" onSubmit={e => { e.preventDefault(); runAISearch(); }}>
+            <input id="archive-query" aria-label="공부 기록 검색" value={chatInput} onChange={e => setChatInput(e.target.value)} placeholder="예: 트랜스포머, 멀티모달, 모델 배포" />
+            <button type="submit" disabled={chatLoading}>{chatLoading ? "검색 중…" : "검색"}</button>
+          </form>
+          <p className="search-hint">찾고 싶은 개념이나 질문을 입력하면 관련 글을 찾아드립니다.</p>
+          {!chatResult && !chatLoading && !chatError && <div className="search-chips">{suggestions.map(s => <button type="button" key={s} onClick={() => { setChatInput(s); runAISearch(s); }}>{s}</button>)}</div>}
+          <div className="search-feedback" aria-live="polite" aria-busy={chatLoading}>
+            {chatLoading && <p className="search-answer">관련 글을 찾고 있습니다…</p>}
+            {chatError && <p className="search-answer" role="alert">{chatError}</p>}
+            {chatResult && <>
+              <div className="search-results-label">“{chatQuery}” · {chatResult.posts.length}개의 기록</div>
+              {chatResult.message && <p className="search-answer">{chatResult.message}</p>}
+              <div className="post-list">{chatResult.posts.map(p => <PostCard key={p.id} p={p} goTo={goTo} />)}</div>
+              {!chatResult.posts.length && !chatResult.message && <p className="empty-result">관련 글이 없습니다. 다른 키워드로 찾아보세요.</p>}
+            </>}
           </div>
+        </section>}
 
-          {acOpen && acTags.length > 0 && (
-            <div className="ac-list">
-              {acTags.map(({ tag, n }, i) => (
-                <button key={tag} className={"ac-item" + (i === acIdx ? " act" : "")}
-                  onMouseDown={(e) => { e.preventDefault(); setChatInput(tag); submitFromMain(tag); }}
-                  onMouseEnter={() => setAcIdx(i)}>
-                  <span className="ac-hash">#</span>
-                  <span style={{ flex: 1 }}>{tag}</span>
-                  <span style={{ color: C.mute, fontSize: 11 }}>{n}</span>
-                </button>
-              ))}
+        {route.name === "projects" && <section className="page-section" id="projects-view">
+          <header className="page-header"><h1 className="page-title">빌드 노트</h1><p className="page-intro">공부가 코드와 제품이 된 기록</p></header>
+          <div className="project-grid">{PROJECTS.map(p => <RouteLink key={p.id} className="project-card" to={{ name: "project", id: p.id }} goTo={goTo}>
+            <div className="project-cover"><ProjImage src={p.thumb} seed={p.id} alt={p.title + " 화면"} fit="contain" /></div>
+            <div className="project-card-content"><div className="project-kind">{p.kind}</div><h2>{p.title}</h2><p>{p.summary}</p>
+              <div className="stack-tags">{(p.stack || []).map(t => <span className="tag" key={t}>{t}</span>)}</div><span className="read-issue">프로젝트 자세히 보기 →</span>
             </div>
-          )}
-        </div>
-        )}
-      </header>
+          </RouteLink>)}</div>
+        </section>}
 
-      {/* ── 내비 (sticky, 링크 전용) ── */}
-      <nav className="dbl-bot" style={{ position: "sticky", top: 0, zIndex: 20, background: C.bg }}>
-        <div style={{ maxWidth: 1060, margin: "0 auto", padding: "0 1.5rem", display: "flex", alignItems: "center", gap: "1.8rem", height: 50 }}>
-          <button className={"navlink" + (route.name === "home" ? " on" : "")} onClick={goHome}>Front Page</button>
-          <button className={"navlink" + (route.name === "about" ? " on" : "")} onClick={() => goto("about")}>Profile</button>
-          <button className={"navlink" + (route.name === "archive" ? " on" : "")} onClick={() => goto("archive")}>AI Search</button>
-          <button className={"navlink" + (route.name === "projects" ? " on" : "")} onClick={() => goto("projects")}>Projects</button>
-          <span className="kicker hide-sm" style={{ marginLeft: "auto" }}>{posts.length} entries on file</span>
-        </div>
-      </nav>
+        {route.name === "project" && curProj && <article className="page-section" id="project-view">
+          <div className="breadcrumbs"><button className="text-button" onClick={goBack}>← 뒤로</button><RouteLink to={{ name: "projects" }} goTo={goTo}>Projects</RouteLink><span className="slash">/</span><span>{curProj.kind}</span></div>
+          <header className="article-head"><h1 className="article-title">{curProj.title}</h1></header>
+          {!!headings.length && <details className="mobile-toc"><summary>이 글의 목차</summary><TocLinks headings={headings} active={activeHeading} /></details>}
+          <div className={"project-hero" + (!curProj.shots?.length ? " single" : "")}>
+            {(curProj.shots?.length ? curProj.shots : [curProj.wide || curProj.thumb]).map((src, i) => <button key={src || i} type="button" aria-label={"프로젝트 화면 " + (i + 1) + " 확대"} onClick={() => src && setLightbox(src)}><ProjImage src={src} seed={curProj.id} alt={curProj.title + " 화면 " + (i + 1)} fit="contain" /></button>)}
+          </div>
+          <p className="project-detail-summary">{curProj.summary}</p>
+          <div className="article-body"><Body key={curProj.id} text={curProj.body || ""} onImg={setLightbox} />
+            {!!curProj.highlights?.length && <><h2 id="project-highlights">Highlights</h2><ul>{curProj.highlights.map((h, i) => <li key={i}>{inlineMd(h)}</li>)}</ul></>}
+            {!!curProj.stack?.length && <><h2 id="project-stack">Stack</h2><div className="stack-tags">{curProj.stack.map(t => <span className="tag" key={t}>{t}</span>)}</div></>}
+            {!!curProj.links?.length && <><h2 id="project-links">Links</h2><div className="project-links">{curProj.links.map((l, i) => {
+              const { Icon, sub } = linkMeta(l.label);
+              return l.url ? <a key={i} href={l.url} target="_blank" rel="noreferrer" title={sub}><Icon />{l.label} ↗</a> : <span key={i} className="tag">{l.label} · 준비 중</span>;
+            })}</div></>}
+          </div>
+          <RouteLink className="return-link" to={{ name: "projects" }} goTo={goTo}>← 프로젝트 목록으로</RouteLink>
+        </article>}
 
-      <main style={{ maxWidth: 1060, margin: "0 auto", padding: "0 1.5rem" }}>
+        {inCategory && <section id="category-view">
+          <div className="breadcrumbs"><RouteLink to={{ name: "home" }} goTo={goTo}>Front Page</RouteLink><span className="slash">/</span><span>Study Notes</span></div>
+          <header className="category-header"><h1 className="category-title">{route.value}</h1><p className="category-description">{route.value === "비전 모델" ? "이미지와 멀티모달 모델을 공부하며 남긴 기록." : "이 주제로 공부하며 남긴 기록."}</p></header>
+          <div className="list-meta"><span>{catPosts.length}개의 기록</span><span>최근 수정순</span></div>
+          <div className="post-list">{catPosts.map(p => <PostCard key={p.id} p={p} goTo={goTo} />)}</div>
+        </section>}
 
-        {/* ── 프론트 페이지 ── */}
-        {route.name === "home" && (<>
-          <section className="grid2" style={{ display: "grid", gridTemplateColumns: "1fr 225px", gap: "3rem", padding: "2.4rem 0 4rem", alignItems: "start" }}>
-            <div id="writing">
-              {featured && (
-                <div className="hov" style={{ border: `1px solid ${C.frame}`, background: C.card, marginBottom: "2.2rem" }} onClick={() => open(featured.id)}>
-                  <div style={{ height: 280, borderBottom: `1px solid ${C.frame}`, overflow: "hidden", position: "relative" }}>
-                    <ProjImage src={featured.thumb} seed={featured.id + "feat"} alt={featured.title} />
-                    <div style={{ position: "absolute", top: 14, left: 14, background: C.bg, border: `1.5px solid ${C.frame}`, padding: "3px 12px" }} className="eyebrow">Featured Study</div>
-                  </div>
-                  <div style={{ padding: "1.5rem 1.8rem 1.8rem" }}>
-                    <div className="kicker" style={{ marginBottom: 10 }}>{featured.category} · {fmt(featured.updated)} · {readMin(featured.body)}</div>
-                    <h2 className="ttl" style={{ fontFamily: FD, fontWeight: 700, fontSize: "1.9rem", color: C.ink, margin: "0 0 .6rem", lineHeight: 1.12 }}>{featured.title}</h2>
-                    <p style={{ margin: 0, color: C.body, lineHeight: 1.8, fontSize: ".97rem" }}>{clean(featured.body).slice(0, 190)}…</p>
-                    <button className="ed" style={{ marginTop: "1.3rem" }}>Read the issue</button>
-                  </div>
-                </div>
-              )}
-              <div className="dbl-bot" style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", paddingBottom: ".6rem", marginBottom: ".4rem" }}>
-                <span className="eyebrow">Latest Issues</span>
-                <button onClick={() => goto("archive")} style={{ background: "none", border: "none", fontFamily: FM, fontSize: 11, letterSpacing: ".06em", color: C.brick, textTransform: "uppercase" }}>Ask the Archive →</button>
-              </div>
-              {rest.length === 0 ? <p style={{ color: C.mute, padding: "2rem 0" }}>아직 다른 글이 없습니다.</p>
-                : rest.slice(0, 2).map((p) => <ListItem key={p.id} p={p} />)}
-            </div>
-
-            <aside className="hide-sm">
-              <div id="about" style={{ marginBottom: "2.4rem" }}>
-                <div className="eyebrow dbl-bot" style={{ paddingBottom: ".5rem", marginBottom: "1rem" }}>The Editor</div>
-                <div style={{ aspectRatio: "1 / 1", border: `1px solid ${C.frame}`, overflow: "hidden", marginBottom: "1rem", filter: "grayscale(.12)" }}><img src="/profile.jpg" alt="최사랑" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 30%" }} /></div>
-                <p style={{ fontSize: ".87rem", lineHeight: 1.8, color: C.body, margin: 0 }}>
-                  AI 엔지니어링을 공부하며 남기는 기록장입니다. 논문 읽다 막힌 부분, 직접 만들어본 파이프라인, 헷갈리던 개념을 그때그때 담아두는 개인적인 공간이에요.
-                </p>
-                <button onClick={() => goto("about")} className="readmore" style={{ marginTop: "1rem", background: "none", border: "none", padding: 0, fontFamily: FB, fontSize: 12, letterSpacing: ".1em", color: C.brick, textTransform: "uppercase", fontWeight: 600, borderBottom: `1.5px solid ${C.brick}`, cursor: "pointer" }}>Read more →</button>
-              </div>
-
-              <div>
-                <div className="eyebrow dbl-bot" style={{ paddingBottom: ".5rem", marginBottom: "1rem" }}>Categories</div>
-                {cats.map(([c, n]) => (
-                  <button key={c} className="cat-row" onClick={() => goTo({ name: "cat", value: c })}
-                    style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", width: "100%", background: "none", border: "none", padding: ".55rem 0", borderBottom: `1px solid ${C.rule}`, color: C.body, fontSize: ".94rem", cursor: "pointer" }}>
-                    <span className="cat-name" style={{ fontFamily: FD, fontWeight: 600, color: C.ink }}>{c}</span>
-                    <span style={{ fontFamily: FM, fontSize: 12, color: C.mustard }}>{String(n).padStart(2, "0")}</span>
-                  </button>
-                ))}
-              </div>
-            </aside>
-          </section>
-        </>)}
-
-        {/* ── About 페이지 (임시 내용 — 추후 본인이 채움) ── */}
-        {route.name === "about" && (
-          <article style={{ maxWidth: 720, margin: "0 auto", padding: "2.8rem 0 4rem" }}>
-            <button onClick={goHome} className="eyebrow" style={{ background: "none", border: "none", padding: 0, marginBottom: "1.8rem" }}>← Back to front page</button>
-            <div className="eyebrow" style={{ marginBottom: "1rem" }}>The Editor</div>
-            <h1 style={{ fontFamily: FD, fontWeight: 700, fontSize: "clamp(2rem,5vw,2.9rem)", color: C.ink, lineHeight: 1.1, margin: "0 0 .6rem" }}>최사랑</h1>
-            <p style={{ fontFamily: FD, fontStyle: "italic", fontSize: "1.1rem", color: C.brick, margin: "0 0 1.8rem" }}>Editor · MLOps &amp; ML Systems</p>
-
-            <div className="dbl-top" style={{ marginBottom: "2.2rem" }} />
-
-            <div style={{ fontSize: "1.05rem" }}>
-              <p className="g-p" style={{ fontFamily: FD, fontStyle: "italic", fontSize: "1.2rem", color: C.ink, lineHeight: 1.6 }}>
-                완성된 결론보다 ‘이해해가는 과정’을 남기는 데 의미를 둡니다.
-              </p>
-
-              <p className="g-p">비전공자로 출발해 AI 엔지니어로의 전환을 준비하고 있습니다. 매일 논문과 개념을 하나씩 제 것으로 만들며, 기초부터 차근차근 밟아가는 중입니다. 화려함을 좇기보다 객관적인 평가를 통해 시스템의 동작을 끝까지 검증하고 통제하는 방식을 지향합니다.</p>
-
-              <h2 className="g-h2">관심 분야</h2>
-              <ul className="g-ul">
-                <li>MLOps 파이프라인 설계와 모델 배포 전략</li>
-                <li>머신러닝 시스템 아키텍처와 인프라</li>
-                <li>멀티모달 · 생성 모델의 동작 원리</li>
-                <li>AI 개발 도구와 코딩 에이전트 활용</li>
-              </ul>
-
-              <h2 className="g-h2">연락</h2>
-              <p className="g-p">이메일 : <a href="mailto:rangedayo@naver.com" style={{ color: C.brick }}>rangedayo@naver.com</a><br />GitHub : <a href="https://github.com/rangedayo" target="_blank" rel="noreferrer" style={{ color: C.brick }}>github.com/rangedayo</a></p>
-
-            </div>
-          </article>
-        )}
-
-        {/* ── Archive 페이지 (AI 사서 챗봇) ── */}
-        {route.name === "archive" && (
-          <section style={{ maxWidth: 760, margin: "0 auto", padding: "2.8rem 0 4rem" }}>
-            <div style={{ textAlign: "center", marginBottom: "2rem" }}>
-              <div className="eyebrow" style={{ marginBottom: 10 }}>The Archive</div>
-              <h1 style={{ fontFamily: FD, fontWeight: 700, fontSize: "clamp(1.9rem,4.5vw,2.6rem)", color: C.ink, lineHeight: 1.1, margin: "0 0 .5rem" }}>무엇이 궁금하신가요?</h1>
-              <p style={{ fontFamily: FD, fontStyle: "italic", fontSize: "1.05rem", color: C.mute, margin: 0 }}>작성된 글 전체를 AI 사서에게 물어보세요</p>
-            </div>
-
-            {/* 입력창 */}
-            <div className="searchbar" style={{ display: "flex", alignItems: "center", gap: 0, background: "#FFFFFF", border: `1.5px solid ${C.mustard}`, borderRadius: 2, marginBottom: "1.1rem", overflow: "hidden" }}>
-              <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 9, padding: "11px 14px" }}>
-                <Magnifier size={15} color={C.mustard} sw={1.5} />
-                <input className="gz-input" value={chatInput} onChange={(e) => setChatInput(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === "Enter") runAISearch(); }}
-                  placeholder="찾고 싶은 내용을 문장이나 키워드로…" style={{ fontSize: 13 }} />
-              </div>
-              <button onClick={() => runAISearch()} disabled={chatLoading} className={chatLoading ? "" : "ai-btn"}
-                style={{ background: chatLoading ? C.mute : C.mustard, border: "none", borderLeft: `1.5px solid ${C.mustard}`, color: C.bg, fontFamily: FM, fontSize: 13, letterSpacing: ".08em", padding: "0 22px", minHeight: 50, cursor: chatLoading ? "default" : "pointer", fontWeight: 600, whiteSpace: "nowrap" }}>
-                {chatLoading ? "검색 중…" : "AI 검색"}
-              </button>
-            </div>
-
-            {/* 추천 질문 칩 (첫 진입 시) */}
-            {!chatResult && !chatLoading && !chatError && (
-              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: "1rem" }}>
-                {suggestions.map((s) => (
-                  <button key={s} className="chip" onClick={() => { setChatInput(s); runAISearch(s); }}>{s}</button>
-                ))}
-              </div>
-            )}
-
-            {/* 로딩 */}
-            {chatLoading && (
-              <div style={{ border: `1px solid ${C.rule}`, background: C.panel, padding: "1.1rem 1.2rem", borderRadius: 2, display: "flex", alignItems: "center", gap: 10 }}>
-                <span style={{ width: 20, height: 20, borderRadius: "50%", background: C.ink, color: C.bg, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: FM, fontSize: 9, flexShrink: 0 }}>G</span>
-                <span style={{ fontFamily: FD, fontStyle: "italic", color: C.mute, fontSize: ".98rem" }}>서가를 살펴보는 중<span className="blink">…</span></span>
-              </div>
-            )}
-
-            {/* 에러 */}
-            {chatError && (
-              <div style={{ border: `1px solid ${C.brick}`, background: C.tintB, padding: "1rem 1.2rem", borderRadius: 2 }}>
-                <p style={{ margin: 0, color: C.brick, fontSize: ".95rem" }}>{chatError}</p>
-              </div>
-            )}
-
-            {/* 결과 */}
-            {chatResult && (
-              <div>
-                <div style={{ border: `1px solid ${C.rule}`, background: C.panel, padding: "1rem 1.2rem", borderRadius: 2, display: "flex", gap: 10, alignItems: "flex-start", marginBottom: "1.2rem" }}>
-                  <span style={{ width: 20, height: 20, borderRadius: "50%", background: C.ink, color: C.bg, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: FM, fontSize: 9, flexShrink: 0, marginTop: 2 }}>G</span>
-                  <p style={{ margin: 0, fontFamily: FD, fontStyle: "italic", fontSize: "1.02rem", color: C.ink, lineHeight: 1.6 }}>{chatResult.message}</p>
-                </div>
-
-                {chatResult.posts.length > 0 && (
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(220px,1fr))", gap: 12 }}>
-                    {chatResult.posts.map((p) => <ResultCard key={p.id} p={p} />)}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* 전체 보관소 (펼치기) */}
-            <div className="dbl-top" style={{ marginTop: "2.8rem", paddingTop: "1.4rem" }}>
-              <button onClick={() => setShowAll((v) => !v)} style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", background: "none", border: "none", padding: ".2rem 0" }}>
-                <span className="eyebrow">전체 보관소 · {sorted.length} entries</span>
-                <span style={{ fontFamily: FM, fontSize: 13, color: C.mustard }}>{showAll ? "− 접기" : "+ 전체 보기"}</span>
-              </button>
-              {showAll && (
-                <div style={{ marginTop: ".6rem" }}>
-                  {sorted.map((p) => <ListItem key={p.id} p={p} />)}
-                </div>
-              )}
-            </div>
-          </section>
-        )}
-
-        {/* ── Projects 페이지 (포트폴리오) ── */}
-        {route.name === "projects" && (
-          <section style={{ padding: "2.4rem 0 4rem" }}>
-            <div style={{ textAlign: "center", marginBottom: "2.2rem" }}>
-              <div className="eyebrow" style={{ marginBottom: 10 }}>Projects</div>
-              <h1 style={{ fontFamily: FD, fontWeight: 700, fontSize: "clamp(1.9rem,4.5vw,2.6rem)", color: C.ink, lineHeight: 1.1, margin: "0 0 .5rem" }}>빌드 노트</h1>
-              <p style={{ fontFamily: FD, fontStyle: "italic", color: C.mute, fontSize: "1.05rem", margin: 0 }}>공부가 코드와 제품이 된 기록</p>
-            </div>
-
-            <div style={{ display: "flex", flexDirection: "column", gap: "2rem" }}>
-              {PROJECTS.map((pr, i) => (
-                <article key={pr.id} className="proj" onClick={() => openProject(pr.id)} style={{ border: `1px solid ${C.frame}`, background: C.card, display: "grid", gridTemplateColumns: "300px 1fr" }}>
-                  <div className="proj-thumb">
-                    <ProjImage src={pr.thumb} seed={pr.id + pr.title} alt={pr.title} fit="cover" pos="top center" />
-                    <div className="kicker" style={{ position: "absolute", top: 12, left: 12, background: C.bg, border: `1.5px solid ${C.frame}`, padding: "3px 11px" }}>No. {String(i + 1).padStart(2, "0")}</div>
-                  </div>
-                  <div style={{ padding: "1.6rem 1.8rem" }}>
-                    <div className="kicker" style={{ marginBottom: 8 }}>{pr.kind} · {fmt(pr.updated || pr.created)}</div>
-                    <h2 style={{ fontFamily: FD, fontWeight: 700, fontSize: "1.45rem", color: C.ink, lineHeight: 1.2, margin: "0 0 .7rem" }}>{pr.title}</h2>
-                    <p style={{ margin: "0 0 1rem", color: C.body, lineHeight: 1.75, fontSize: "1rem" }}>{pr.summary}</p>
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: "1rem" }}>
-                      {pr.stack.map((s) => <span key={s} style={{ fontFamily: FM, fontSize: 11, color: C.ink, background: C.tintM, padding: "3px 9px", borderRadius: 2 }}>{s}</span>)}
-                    </div>
-                    <span className="proj-go">프로젝트 자세히 보기 →</span>
-                  </div>
-                </article>
-              ))}
-            </div>
-
-          </section>
-        )}
-
-        {/* ── 프로젝트 상세 페이지 ── */}
-        {route.name === "project" && curProj && (
-          <article style={{ maxWidth: 760, margin: "0 auto", padding: "2.8rem 0 4rem" }}>
-            <button onClick={goBack} className="eyebrow" style={{ background: "none", border: "none", padding: 0, marginBottom: "1.8rem", cursor: "pointer" }}>← Back to projects</button>
-            <div className="kicker" style={{ marginBottom: "1rem" }}>{curProj.kind} · {fmt(curProj.updated || curProj.created)}</div>
-            <h1 style={{ fontFamily: FD, fontWeight: 700, fontSize: "clamp(1.9rem,4.5vw,2.7rem)", color: C.ink, lineHeight: 1.15, margin: "0 0 1.4rem" }}>{curProj.title}</h1>
-            {curProj.shots?.length
-              ? <div className="dbl-top dbl-bot proj-shots">
-                  {curProj.shots.map((s, i) => (
-                    <button className="tile" key={i} onClick={() => setLightbox(s)} aria-label={`${curProj.title} 화면 ${i + 1} 원본 보기`}>
-                      <ProjImage src={s} seed={curProj.id + i} alt={`${curProj.title} 화면 ${i + 1}`} />
-                    </button>
-                  ))}
-                </div>
-              : curProj.wide
-                ? <button type="button" className="dbl-top dbl-bot proj-wide" onClick={() => setLightbox(curProj.wide)} aria-label={`${curProj.title} 대시보드 원본 보기`}>
-                    <ProjImage src={curProj.wide} seed={curProj.id + curProj.title} alt={`${curProj.title} 대시보드`} fit="natural" />
-                  </button>
-                : <div className="dbl-top dbl-bot" style={{ height: 280, margin: "0 0 2rem", overflow: "hidden" }}><Art seed={curProj.id + curProj.title} /></div>}
-
-            <p style={{ fontSize: ".97rem", color: C.body, lineHeight: 1.85, margin: "0 0 1.8rem" }}>{curProj.summary}</p>
-
-            {curProj.body && <div style={{ fontSize: "1.05rem", marginBottom: "2.4rem" }}><Body text={curProj.body} onImg={setLightbox} /></div>}
-
-            <div className="eyebrow dbl-bot" style={{ paddingBottom: ".5rem", marginBottom: "1rem" }}>Highlights</div>
-            <ul className="g-ul g-bull" style={{ margin: "0 0 2rem" }}>
-              {curProj.highlights.map((h, j) => <li key={j} style={{ fontSize: ".97rem", color: C.body }}>{h}</li>)}
-            </ul>
-
-            <div className="eyebrow dbl-bot" style={{ paddingBottom: ".5rem", marginBottom: "1rem" }}>Stack</div>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 7, marginBottom: "2rem" }}>
-              {curProj.stack.map((s) => <span key={s} style={{ fontFamily: FM, fontSize: 12, color: C.ink, background: C.tintM, padding: "4px 11px", borderRadius: 2 }}>{s}</span>)}
-            </div>
-
-            <div className="eyebrow dbl-bot" style={{ paddingBottom: ".5rem", marginBottom: "1rem" }}>Links</div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 10, maxWidth: 420 }}>
-              {curProj.links.map((lnk) => {
-                const { Icon, sub } = linkMeta(lnk.label);
-                return lnk.url ? (
-                  <a key={lnk.label} href={lnk.url} target="_blank" rel="noreferrer" className="lnk-cta">
-                    <span className="ic"><Icon /></span>
-                    <span className="tx"><span className="t1">{lnk.label}</span><span className="t2">{sub}</span></span>
-                    <span className="arr">↗</span>
-                  </a>
-                ) : (
-                  <span key={lnk.label} className="lnk-cta off">
-                    <span className="ic"><Icon /></span>
-                    <span className="tx"><span className="t1">{lnk.label}</span><span className="t2">준비 중</span></span>
-                  </span>
-                );
-              })}
-            </div>
-          </article>
-        )}
-
-        {/* ── 섹션(카테고리) ── */}
-        {route.name === "cat" && (
-          <section style={{ padding: "2.4rem 0 4rem" }}>
-            <button onClick={goHome} className="eyebrow" style={{ background: "none", border: "none", padding: 0, marginBottom: "1.3rem" }}>← Front page</button>
-            <h2 className="dbl-bot" style={{ fontFamily: FD, fontWeight: 700, fontSize: "2.5rem", color: C.ink, margin: "0 0 1.6rem", paddingBottom: ".6rem" }}>{route.value}</h2>
-            {catPosts.map((p) => <ListItem key={p.id} p={p} />)}
-          </section>
-        )}
-
-        {/* ── 글 읽기 ── */}
-        {route.name === "post" && cur && (
-          <article style={{ maxWidth: 720, margin: "0 auto", padding: "2.8rem 0 4rem" }}>
-            <button onClick={goBack} className="eyebrow" style={{ background: "none", border: "none", padding: 0, marginBottom: "1.8rem", cursor: "pointer" }}>{backLabel}</button>
-            <div className="kicker" style={{ marginBottom: "1rem" }}>
-              <button onClick={() => goTo({ name: "cat", value: cur.category })} style={{ background: "none", border: "none", padding: 0, fontFamily: FM, letterSpacing: ".12em", textTransform: "uppercase", fontSize: 11, color: C.brick, cursor: "pointer" }}>{cur.category}</button>
-              {"  ·  " + fmt(cur.created) + "  ·  " + readMin(cur.body)}
-            </div>
-            <h1 className="dbl-bot" style={{ fontFamily: FD, fontWeight: 700, fontSize: "clamp(2rem,5vw,2.9rem)", color: C.ink, lineHeight: 1.12, margin: "0 0 1.6rem", paddingBottom: "1rem" }}>{cur.title}</h1>
-            <div style={{ fontSize: "1.05rem" }}><Body text={cur.body} onImg={setLightbox} /></div>
-            {(cur.tags || []).length > 0 && (
-              <div style={{ marginTop: "2.4rem", paddingTop: "1.1rem", borderTop: `1px solid ${C.rule}` }}>
-                {cur.tags.map((t) => <span key={t} style={{ fontFamily: FM, fontSize: 12, color: C.mute, marginRight: 16 }}>#{t}</span>)}
-              </div>
-            )}
-            <div style={{ marginTop: "2.8rem", paddingTop: "1.6rem" }} className="dbl-top">
-              <div className="eyebrow" style={{ marginBottom: "1.3rem" }}>More in {cur.category}</div>
-              {(prevPost || nextPost) ? (
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
-                  {[{ p: prevPost, dir: "← 이전 글" }, { p: nextPost, dir: "다음 글 →" }].map(({ p, dir }, i) => (
-                    p ? (
-                      <div key={p.id} className="pn-card" onClick={() => open(p.id)}>
-                        <span className="pn-bar" />
-                        <div className="pn-body">
-                          <div style={{ height: 120, borderBottom: `1px solid ${C.frame}`, overflow: "hidden" }}><ProjImage src={p.thumb} seed={p.id + p.title} alt={p.title} /></div>
-                          <div style={{ padding: "11px 13px 13px" }}>
-                            <div className="kicker" style={{ marginBottom: 6, fontSize: 10, color: C.brick }}>{dir}</div>
-                            <h3 className="ttl" style={{ fontFamily: FD, fontWeight: 600, fontSize: "1.04rem", color: C.ink, lineHeight: 1.25, margin: 0 }}>{p.title}</h3>
-                          </div>
-                        </div>
-                      </div>
-                    ) : (
-                      <div key={i} style={{ border: `1px dashed ${C.rule}`, display: "flex", alignItems: "center", justifyContent: "center", color: C.mute, fontFamily: FM, fontSize: 12, minHeight: 120 }}>
-                        {i === 0 ? "이 카테고리의 첫 글" : "이 카테고리의 마지막 글"}
-                      </div>
-                    )
-                  ))}
-                </div>
-              ) : (
-                <p style={{ color: C.mute, fontSize: ".94rem" }}>이 카테고리에는 아직 다른 글이 없습니다.</p>
-              )}
-            </div>
-          </article>
-        )}
+        {route.name === "post" && cur && <article id="article-view">
+          <div className="breadcrumbs"><button className="text-button" onClick={goBack}>← 뒤로</button><RouteLink to={{ name: "cat", value: cur.category }} goTo={goTo}>Study Notes</RouteLink><span className="slash">/</span><RouteLink to={{ name: "cat", value: cur.category }} goTo={goTo}>{cur.category}</RouteLink></div>
+          <header className="article-head"><h1 className="article-title">{cur.title}</h1><div className="metadata"><span>{fmt(cur.created || cur.updated)}</span><span className="separator" /><span>{readMin(cur.body)}</span><span className="separator" /><span>Study Notes</span></div></header>
+          {!!headings.length && <details className="mobile-toc"><summary>이 글의 목차</summary><TocLinks headings={headings} active={activeHeading} /></details>}
+          {cur.thumb && <button className="article-cover" aria-label="글 커버 확대" onClick={() => setLightbox(cur.thumb)}><ProjImage src={cur.thumb} seed={cur.id} alt={cur.title + " 커버"} fit="natural" /></button>}
+          <div className="article-body"><Body key={cur.id} text={cur.body} onImg={setLightbox} /></div>
+          <div className="post-tags">{(cur.tags || []).map(t => <span className="tag" key={t}>#{t}</span>)}</div>
+          <RouteLink className="return-link" to={{ name: "cat", value: cur.category }} goTo={goTo}>← 카테고리 목록으로</RouteLink>
+          {(prevPost || nextPost) && <><h2 className="next-heading">같은 카테고리에서 더 읽기</h2><div className="next-cards">
+            {[{ p: prevPost, label: "이전 글" }, { p: nextPost, label: "다음 글" }].filter(x => x.p).map(({ p, label }) => <RouteLink key={p.id} className="next-card" to={{ name: "post", id: p.id }} goTo={goTo}><small>{label} · {p.category}</small><strong>{p.title}</strong></RouteLink>)}
+          </div></>}
+        </article>}
+        {((route.name === "post" && !cur) || (route.name === "project" && !curProj)) && <p className="empty-result">기록을 찾을 수 없습니다. <RouteLink to={{ name: "home" }} goTo={goTo}>첫 화면으로 이동</RouteLink></p>}
       </main>
 
-      {/* ── 꼬리말 ── */}
-      <footer className="dbl-top" style={{ marginTop: "1rem", background: C.bg }}>
-        <div style={{ maxWidth: 1060, margin: "0 auto", padding: "2rem 1.5rem", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "1rem" }}>
-          <span style={{ fontFamily: FD, fontWeight: 900, fontSize: "1.3rem", color: C.ink }}>The Study Gazette</span>
-          <span className="kicker">Printed in good faith · {posts.length} entries on file</span>
-        </div>
-      </footer>
-
-      {lightbox && (
-        <div className="lb" onClick={() => setLightbox(null)} role="dialog" aria-modal="true">
-          <button className="lb-close" onClick={() => setLightbox(null)} aria-label="닫기">×</button>
-          <img src={lightbox} alt="원본 화면" onClick={(e) => e.stopPropagation()} />
-        </div>
-      )}
+      {reading && !!headings.length && <aside className="toc" aria-label="이 글의 목차"><div className="toc-title">On this page</div><div className="toc-links"><TocLinks headings={headings} active={activeHeading} /></div></aside>}
+      {inCategory && <aside className="category-aside"><strong>{route.value}</strong><p>공부하며 남긴 기록들을 모았습니다.</p><RouteLink to={{ name: "archive" }} goTo={goTo}>필요한 글 검색하기 →</RouteLink></aside>}
     </div>
-  );
+    <footer className="footer"><span>The Study Gazette</span><span>{posts.length} study notes · {PROJECTS.length} projects</span></footer>
+    {lightbox && <div className="lb" role="dialog" aria-modal="true" aria-label="이미지 원본" onClick={() => setLightbox(null)}><button autoFocus className="lb-close" onClick={() => setLightbox(null)} aria-label="닫기">×</button><img src={lightbox} alt="이미지 원본" onClick={e => e.stopPropagation()} /></div>}
+  </div>;
 }
-// study gazette
