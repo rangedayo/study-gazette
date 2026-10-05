@@ -527,7 +527,7 @@ export default function StudyGazette() {
 
     <div className="workspace">
       {(reading || inCategory) && <aside className="sidebar" aria-label="카테고리와 글 탐색">
-        <div className="side-group"><div className="side-title">{route.name === "project" ? "Projects" : "Study Notes"}</div>
+        <div className="side-group"><div className="side-title">{route.name === "project" ? "Projects" : "Categories"}</div>
           {route.name === "project"
             ? <RouteLink to={{ name: "projects" }} goTo={goTo}>프로젝트 목록</RouteLink>
             : cats.map(([c]) => <RouteLink key={c} className={activeCategory === c ? "active" : undefined} to={{ name: "cat", value: c }} goTo={goTo}>{c}</RouteLink>)}
