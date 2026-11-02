@@ -19,6 +19,7 @@ import { fetch as undiciFetch, Agent } from "undici";
 import { writeFile, mkdir, rm } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { createProjectResolver } from "./notion-project.mjs";
 
 const TOKEN = process.env.NOTION_TOKEN;
 const DB_ID = process.env.NOTION_DB_ID;
@@ -349,8 +350,13 @@ async function main() {
   console.log(`· Published 글 ${pages.length}건 발견`);
 
   const posts = [];
+  const resolveProject = createProjectResolver((pageId) => withRetry(
+    () => notion.pages.retrieve({ page_id: pageId }),
+    { label: "연결 프로젝트 조회" }
+  ));
   for (const page of pages) {
     const props = page.properties;
+    const projectId = await resolveProject(props);
     const blocks = await fetchAllBlocks(page.id);
     const slug = getRichText(props, "Slug");
     const id = slug || page.id.replace(/-/g, "");
@@ -374,6 +380,7 @@ async function main() {
       id,
       title: getTitle(props),
       category: getSelect(props, "Category") || "기타",
+      ...(projectId ? { projectId } : {}),
       pinned: getCheckbox(props, "Pinned"),
       tags: getMultiSelect(props, "Tags"),
       created,

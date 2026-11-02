@@ -332,3 +332,6 @@ button[disabled]{cursor:default;color:var(--muted)}
 .content :is(.page-title,.category-title){font-size:var(--content-title-size)}
 .content .project-card h2{font-size:var(--content-section-size)}
 .content :is(.page-intro,.category-description,.card-excerpt,.project-card p,.search-answer,.empty-result,.search-form input){font-size:var(--content-body-size)}
+/* 프로젝트 기록도 Study Notes의 글 카드와 제목 크기를 그대로 사용한다. */
+.project-records{margin-top:36px;padding-top:26px;border-top:1px solid var(--line);scroll-margin-top:24px}
+.project-records .section-title{font-size:var(--content-section-size);margin-bottom:20px}

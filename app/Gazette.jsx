@@ -44,7 +44,7 @@ const encodeRoute = (r) => {
   if (!r || r.name === "home") return "";
   if (r.name === "cat") return "cat:" + encodeURIComponent(r.value);
   if (r.name === "post") return "post:" + r.id;
-  if (r.name === "project") return "project:" + r.id;
+  if (r.name === "project") return "project:" + r.id + (r.section === "records" ? ":records" : "");
   return r.name;
 };
 const decodeRoute = (hash) => {
@@ -54,7 +54,10 @@ const decodeRoute = (hash) => {
   if (s === "profile") return { name: "about" };
   if (s.startsWith("cat:")) return { name: "cat", value: decodeURIComponent(s.slice(4)) };
   if (s.startsWith("post:")) return { name: "post", id: s.slice(5) };
-  if (s.startsWith("project:")) return { name: "project", id: s.slice(8) };
+  if (s.startsWith("project:")) {
+    const [id, section] = s.slice(8).split(":");
+    return { name: "project", id, ...(section === "records" ? { section } : {}) };
+  }
   if (SECTIONS.includes(s)) return { name: s };
   return { name: "home" };
 };
@@ -109,6 +112,13 @@ const PROJECT_SHOTS = {
 const PROJECTS = (Array.isArray(PROJECTS_DATA) ? [...PROJECTS_DATA] : [])
   .sort((a, b) => (b.created || 0) - (a.created || 0))
   .map((p) => ({ ...p, ...(PROJECT_SHOTS[p.id] || {}) }));
+const PROJECT_NAMES = { p2: "energy-forecast", p1: "plant-diagnosis" };
+const projectName = (p) => PROJECT_NAMES[p.id] || p.title;
+const projectRecordsLabel = (p) => p.id === "p1" ? "개발 기록" : "실험 기록";
+const PROJECT_MENU = [...PROJECTS].sort((a, b) => {
+  const order = (p) => p.id === "p2" ? 0 : p.id === "p1" ? 1 : 2;
+  return order(a) - order(b);
+});
 
 /* Mermaid 다이어그램 — 클라이언트에서만 동적 렌더. 로딩/실패 시 코드 블록으로 폴백 */
 function Mermaid({ chart }) {
@@ -352,7 +362,7 @@ function RouteLink({ to, goTo, children, onClick, ...props }) {
 
 function PostCard({ p, goTo }) {
   return <RouteLink className={"post-card" + (p.thumb ? "" : " no-image")} to={{ name: "post", id: p.id }} goTo={goTo}>
-    <div><div className="card-meta">{fmt(p.updated)} · {readMin(p.body)}</div><h2>{p.title}</h2>
+    <div><div className="card-meta">{fmt(p.created || p.updated)} · {readMin(p.body)}</div><h2>{p.title}</h2>
       <p className="card-excerpt">{clean(p.body).slice(0, 210)}</p>
       <div className="card-tags">{(p.tags || []).slice(0, 3).map(t => <span key={t}>#{t}</span>)}</div>
     </div>
@@ -409,13 +419,14 @@ export default function StudyGazette() {
     };
   }, []);
 
-  const sorted = useMemo(() => [...(posts || [])].sort((a, b) => b.updated - a.updated), [posts]);
-  const featured = useMemo(() => sorted.find((p) => p.pinned) || sorted[0], [sorted]);
-  const rest = useMemo(() => sorted.filter((p) => p.id !== featured?.id), [sorted, featured]);
+  const sorted = useMemo(() => [...(posts || [])].sort((a, b) => (b.created || b.updated) - (a.created || a.updated)), [posts]);
+  const studyPosts = useMemo(() => sorted.filter((p) => !p.projectId), [sorted]);
+  const featured = useMemo(() => studyPosts.find((p) => p.pinned) || studyPosts[0], [studyPosts]);
+  const rest = useMemo(() => studyPosts.filter((p) => p.id !== featured?.id), [studyPosts, featured]);
   const cats = useMemo(() => {
-    const m = {}; (posts || []).forEach((p) => (m[p.category] = (m[p.category] || 0) + 1));
+    const m = {}; studyPosts.forEach((p) => (m[p.category] = (m[p.category] || 0) + 1));
     return Object.entries(m).sort((a, b) => b[1] - a[1]);
-  }, [posts]);
+  }, [studyPosts]);
 
   /* 모든 화면 전환은 goTo를 거쳐 URL 해시에 기록 → 브라우저 뒤로가기가 정확히 복원 */
   const goTo = useCallback((r) => {
@@ -429,10 +440,14 @@ export default function StudyGazette() {
   const goBack = () => { if (window.history.length > 1) window.history.back(); else goTo({ name: "home" }); };
   const cur = (posts || []).find((p) => p.id === route.id);
   const curProj = PROJECTS.find((p) => p.id === route.id);
-  const catPosts = route.name === "cat" ? sorted.filter((p) => p.category === route.value) : [];
+  const postProject = route.name === "post" ? PROJECTS.find((p) => p.id === cur?.projectId) : null;
+  const activeProject = route.name === "project" ? curProj : postProject;
+  const inProjects = route.name === "project" || !!postProject;
+  const projectPosts = useMemo(() => activeProject ? sorted.filter((p) => p.projectId === activeProject.id) : [], [sorted, activeProject]);
+  const catPosts = route.name === "cat" ? studyPosts.filter((p) => p.category === route.value) : [];
 
-  /* 현재 글이 속한 카테고리 안에서 이전·다음 글 (시간 역순 기준) */
-  const sameCat = useMemo(() => (cur ? sorted.filter((p) => p.category === cur.category) : []), [sorted, cur]);
+  /* 프로젝트 기록은 같은 프로젝트 안에서, 스터디 글은 같은 카테고리 안에서 이동한다. */
+  const sameCat = useMemo(() => cur ? (cur.projectId ? sorted.filter((p) => p.projectId === cur.projectId) : studyPosts.filter((p) => p.category === cur.category)) : [], [sorted, studyPosts, cur]);
   const curIdx = cur ? sameCat.findIndex((p) => p.id === cur.id) : -1;
   const prevPost = curIdx > 0 ? sameCat[curIdx - 1] : null;
   const nextPost = curIdx >= 0 && curIdx < sameCat.length - 1 ? sameCat[curIdx + 1] : null;
@@ -472,6 +487,7 @@ export default function StudyGazette() {
       ...(curProj.highlights?.length ? [{ id: "project-highlights", text: "Highlights" }] : []),
       ...(curProj.stack?.length ? [{ id: "project-stack", text: "Stack" }] : []),
       ...(curProj.links?.length ? [{ id: "project-links", text: "Links" }] : []),
+      { id: "project-records", text: projectRecordsLabel(curProj) },
     ];
     return [];
   }, [route.name, cur, curProj]);
@@ -486,6 +502,12 @@ export default function StudyGazette() {
     headings.forEach(h => { const el = document.getElementById(h.id); if (el) observer.observe(el); });
     return () => observer.disconnect();
   }, [headings]);
+
+  useEffect(() => {
+    if (route.name !== "project" || route.section !== "records") return;
+    const frame = requestAnimationFrame(() => document.getElementById("project-records")?.scrollIntoView({ block: "start" }));
+    return () => cancelAnimationFrame(frame);
+  }, [route, posts]);
 
   useEffect(() => {
     const shortcut = e => {
@@ -508,8 +530,8 @@ export default function StudyGazette() {
   const studyRoute = { name: "cat", value: studyCategory };
   const navItems = [
     { label: "Front Page", to: { name: "home" }, active: route.name === "home" },
-    { label: "Study Notes", to: studyRoute, active: inCategory || route.name === "post" },
-    { label: "Projects", to: { name: "projects" }, active: route.name === "projects" || route.name === "project" },
+    { label: "Study Notes", to: studyRoute, active: inCategory || (route.name === "post" && !postProject) },
+    { label: "Projects", to: { name: "projects" }, active: route.name === "projects" || inProjects },
     { label: "Profile", to: { name: "about" }, active: route.name === "about" },
     { label: "Search", to: { name: "archive" }, active: route.name === "archive" },
   ];
@@ -526,15 +548,18 @@ export default function StudyGazette() {
     </div></nav>
 
     <div className="workspace">
-      {(reading || inCategory) && <aside className="sidebar" aria-label="카테고리와 글 탐색">
-        <div className="side-group"><div className="side-title">{route.name === "project" ? "Projects" : "Categories"}</div>
-          {route.name === "project"
-            ? <RouteLink to={{ name: "projects" }} goTo={goTo}>프로젝트 목록</RouteLink>
+      {(reading || inCategory) && <aside className="sidebar" aria-label={inProjects ? "프로젝트와 글 탐색" : "카테고리와 글 탐색"}>
+        <div className="side-group"><div className="side-title">{inProjects ? "Projects" : "Categories"}</div>
+          {inProjects
+            ? PROJECT_MENU.map(p => <RouteLink key={p.id} className={activeProject?.id === p.id ? "active" : undefined} to={{ name: "project", id: p.id }} goTo={goTo}>{projectName(p)}</RouteLink>)
             : cats.map(([c]) => <RouteLink key={c} className={activeCategory === c ? "active" : undefined} to={{ name: "cat", value: c }} goTo={goTo}>{c}</RouteLink>)}
         </div>
-        <div className="side-group"><div className="side-title">{route.name === "project" ? "빌드 노트" : activeCategory}</div>
-          {route.name === "project" ? PROJECTS.map(p => <RouteLink key={p.id} className={"post-link" + (curProj?.id === p.id ? " active" : "")} to={{ name: "project", id: p.id }} goTo={goTo}>{p.title}</RouteLink>)
-            : sorted.filter(p => p.category === activeCategory).slice(0, 5).map(p => <RouteLink key={p.id} className={"post-link" + (cur?.id === p.id ? " active" : "")} to={{ name: "post", id: p.id }} goTo={goTo}>{p.title}</RouteLink>)}
+        <div className="side-group"><div className="side-title">{inProjects ? activeProject && projectName(activeProject) : activeCategory}</div>
+          {inProjects ? activeProject && <>
+            <RouteLink className={"post-link" + (route.name === "project" && !route.section ? " active" : "")} to={{ name: "project", id: activeProject.id }} goTo={goTo}>프로젝트 소개</RouteLink>
+            {projectPosts.map(p => <RouteLink key={p.id} className={"post-link" + (cur?.id === p.id ? " active" : "")} to={{ name: "post", id: p.id }} goTo={goTo}>{p.title}</RouteLink>)}
+          </>
+            : studyPosts.filter(p => p.category === activeCategory).slice(0, 5).map(p => <RouteLink key={p.id} className={"post-link" + (cur?.id === p.id ? " active" : "")} to={{ name: "post", id: p.id }} goTo={goTo}>{p.title}</RouteLink>)}
         </div>
       </aside>}
 
@@ -550,7 +575,7 @@ export default function StudyGazette() {
             </RouteLink>}
             <div className="section-head"><h2 className="section-title">Latest Issues</h2><RouteLink className="quiet-link" to={studyRoute} goTo={goTo}>Study Notes 보기 →</RouteLink></div>
             <div className="issue-grid">{rest.slice(0, 4).map(p => <RouteLink key={p.id} className="issue-card" to={{ name: "post", id: p.id }} goTo={goTo}>
-              <div className="card-meta">{p.category} · {fmt(p.updated)}</div><h3>{p.title}</h3><p>{clean(p.body).slice(0, 150)}</p>
+              <div className="card-meta">{p.category} · {fmt(p.created || p.updated)}</div><h3>{p.title}</h3><p>{clean(p.body).slice(0, 150)}</p>
               <div className="card-tags">{(p.tags || []).slice(0, 2).map(t => <span key={t}>#{t}</span>)}</div>
             </RouteLink>)}</div>
             {PROJECTS.length > 0 && <><div className="section-head"><h2 className="section-title">Projects</h2><RouteLink className="quiet-link" to={{ name: "projects" }} goTo={goTo}>빌드 노트 보기 →</RouteLink></div>
@@ -607,7 +632,7 @@ export default function StudyGazette() {
         </section>}
 
         {route.name === "project" && curProj && <article className="page-section" id="project-view">
-          <div className="breadcrumbs"><button className="text-button" onClick={goBack}>← 뒤로</button><RouteLink to={{ name: "projects" }} goTo={goTo}>Projects</RouteLink><span className="slash">/</span><span>{curProj.kind}</span></div>
+          <div className="breadcrumbs"><RouteLink to={{ name: "projects" }} goTo={goTo}>Projects</RouteLink><span className="slash">/</span><RouteLink to={{ name: "project", id: curProj.id }} goTo={goTo}>{projectName(curProj)}</RouteLink><span className="slash">/</span><span>프로젝트 소개</span></div>
           <header className="article-head"><h1 className="article-title">{curProj.title}</h1></header>
           {!!headings.length && <details className="mobile-toc"><summary>이 글의 목차</summary><TocLinks headings={headings} active={activeHeading} /></details>}
           <div className={"project-hero" + (!curProj.shots?.length ? " single" : "")}>
@@ -622,26 +647,33 @@ export default function StudyGazette() {
               return l.url ? <a key={i} href={l.url} target="_blank" rel="noreferrer" title={sub}><Icon />{l.label} ↗</a> : <span key={i} className="tag">{l.label} · 준비 중</span>;
             })}</div></>}
           </div>
-          <RouteLink className="return-link" to={{ name: "projects" }} goTo={goTo}>← 프로젝트 목록으로</RouteLink>
+          <section className="project-records" id="project-records" aria-label={projectRecordsLabel(curProj)}>
+            <h2 className="section-title">{projectRecordsLabel(curProj)}</h2>
+            <div className="list-meta"><span>{projectPosts.length}개의 기록</span><span>최근 글부터</span></div>
+            <div className="post-list">{projectPosts.map(p => <PostCard key={p.id} p={p} goTo={goTo} />)}</div>
+            {!projectPosts.length && <p className="empty-result">아직 공개된 {projectRecordsLabel(curProj)}이 없습니다.</p>}
+          </section>
         </article>}
 
         {inCategory && <section id="category-view">
           <div className="breadcrumbs"><RouteLink to={{ name: "home" }} goTo={goTo}>Front Page</RouteLink><span className="slash">/</span><span>Study Notes</span></div>
           <header className="category-header"><h1 className="category-title">{route.value}</h1><p className="category-description">{route.value === "비전 모델" ? "이미지와 멀티모달 모델을 공부하며 남긴 기록." : "이 주제로 공부하며 남긴 기록."}</p></header>
-          <div className="list-meta"><span>{catPosts.length}개의 기록</span><span>최근 수정순</span></div>
+          <div className="list-meta"><span>{catPosts.length}개의 기록</span><span>최근 글부터</span></div>
           <div className="post-list">{catPosts.map(p => <PostCard key={p.id} p={p} goTo={goTo} />)}</div>
         </section>}
 
         {route.name === "post" && cur && <article id="article-view">
-          <div className="breadcrumbs"><button className="text-button" onClick={goBack}>← 뒤로</button><RouteLink to={{ name: "cat", value: cur.category }} goTo={goTo}>Study Notes</RouteLink><span className="slash">/</span><RouteLink to={{ name: "cat", value: cur.category }} goTo={goTo}>{cur.category}</RouteLink></div>
-          <header className="article-head"><h1 className="article-title">{cur.title}</h1><div className="metadata"><span>{fmt(cur.created || cur.updated)}</span><span className="separator" /><span>{readMin(cur.body)}</span><span className="separator" /><span>Study Notes</span></div></header>
+          <div className="breadcrumbs">{!postProject && <button className="text-button" onClick={goBack}>← 뒤로</button>}{postProject ? <>
+            <RouteLink to={{ name: "projects" }} goTo={goTo}>Projects</RouteLink><span className="slash">/</span><RouteLink to={{ name: "project", id: postProject.id }} goTo={goTo}>{projectName(postProject)}</RouteLink><span className="slash">/</span><RouteLink to={{ name: "project", id: postProject.id, section: "records" }} goTo={goTo}>{projectRecordsLabel(postProject)}</RouteLink>
+          </> : <><RouteLink to={{ name: "cat", value: cur.category }} goTo={goTo}>Study Notes</RouteLink><span className="slash">/</span><RouteLink to={{ name: "cat", value: cur.category }} goTo={goTo}>{cur.category}</RouteLink></>}</div>
+          <header className="article-head"><h1 className="article-title">{cur.title}</h1><div className="metadata"><span>{fmt(cur.created || cur.updated)}</span><span className="separator" /><span>{readMin(cur.body)}</span><span className="separator" /><span>{postProject ? projectRecordsLabel(postProject) : "Study Notes"}</span></div></header>
           {!!headings.length && <details className="mobile-toc"><summary>이 글의 목차</summary><TocLinks headings={headings} active={activeHeading} /></details>}
           {cur.thumb && <button className="article-cover" aria-label="글 커버 확대" onClick={() => setLightbox(cur.thumb)}><ProjImage src={cur.thumb} seed={cur.id} alt={cur.title + " 커버"} fit="natural" /></button>}
           <div className="article-body"><Body key={cur.id} text={cur.body} onImg={setLightbox} /></div>
           <div className="post-tags">{(cur.tags || []).map(t => <span className="tag" key={t}>#{t}</span>)}</div>
-          <RouteLink className="return-link" to={{ name: "cat", value: cur.category }} goTo={goTo}>← 카테고리 목록으로</RouteLink>
-          {(prevPost || nextPost) && <><h2 className="next-heading">같은 카테고리에서 더 읽기</h2><div className="next-cards">
-            {[{ p: prevPost, label: "이전 글" }, { p: nextPost, label: "다음 글" }].filter(x => x.p).map(({ p, label }) => <RouteLink key={p.id} className="next-card" to={{ name: "post", id: p.id }} goTo={goTo}><small>{label} · {p.category}</small><strong>{p.title}</strong></RouteLink>)}
+          <RouteLink className="return-link" to={postProject ? { name: "project", id: postProject.id, section: "records" } : { name: "cat", value: cur.category }} goTo={goTo}>← {postProject ? projectRecordsLabel(postProject) + " 목록으로" : "카테고리 목록으로"}</RouteLink>
+          {(prevPost || nextPost) && <><h2 className="next-heading">{postProject ? "같은 프로젝트에서 더 읽기" : "같은 카테고리에서 더 읽기"}</h2><div className="next-cards">
+            {[{ p: prevPost, label: "이전 글" }, { p: nextPost, label: "다음 글" }].filter(x => x.p).map(({ p, label }) => <RouteLink key={p.id} className="next-card" to={{ name: "post", id: p.id }} goTo={goTo}><small>{label} · {postProject ? projectName(postProject) : p.category}</small><strong>{p.title}</strong></RouteLink>)}
           </div></>}
         </article>}
         {((route.name === "post" && !cur) || (route.name === "project" && !curProj)) && <p className="empty-result">기록을 찾을 수 없습니다. <RouteLink to={{ name: "home" }} goTo={goTo}>첫 화면으로 이동</RouteLink></p>}
@@ -650,7 +682,7 @@ export default function StudyGazette() {
       {reading && !!headings.length && <aside className="toc" aria-label="이 글의 목차"><div className="toc-title">On this page</div><div className="toc-links"><TocLinks headings={headings} active={activeHeading} /></div></aside>}
       {inCategory && <aside className="category-aside"><strong>{route.value}</strong><p>공부하며 남긴 기록들을 모았습니다.</p><RouteLink to={{ name: "archive" }} goTo={goTo}>필요한 글 검색하기 →</RouteLink></aside>}
     </div>
-    <footer className="footer"><span>The Study Gazette</span><span>{posts.length} study notes · {PROJECTS.length} projects</span></footer>
+    <footer className="footer"><span>The Study Gazette</span><span>{studyPosts.length} study notes · {PROJECTS.length} projects</span></footer>
     {lightbox && <div className="lb" role="dialog" aria-modal="true" aria-label="이미지 원본" onClick={() => setLightbox(null)}><button autoFocus className="lb-close" onClick={() => setLightbox(null)} aria-label="닫기">×</button><img src={lightbox} alt="이미지 원본" onClick={e => e.stopPropagation()} /></div>}
   </div>;
 }
