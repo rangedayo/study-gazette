@@ -1,4 +1,6 @@
-import posts from "../../../data/posts.json";
+import { getContent } from "../../../lib/content";
+
+export const maxDuration = 60;
 
 // 본문에서 마크다운 기호를 걷어내 검색용 발췌를 만든다 (컴포넌트의 clean과 동일 규칙)
 const clean = (b) =>
@@ -24,6 +26,7 @@ export async function POST(req) {
       );
     }
 
+    const { posts } = await getContent();
     const catalog = posts.map((p) => ({
       id: p.id,
       title: p.title,

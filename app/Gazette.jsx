@@ -109,13 +109,13 @@ const PROJECT_SHOTS = {
   p1: { thumb: "/projects/01-home.png", shots: ["/projects/01-home.png", "/projects/02-result.png", "/projects/03-refine.png", "/projects/04-refine-result.png", "/projects/05-myplants.png"] },
   p2: { thumb: "/projects/ess-dashboard.png", wide: "/projects/ess-dashboard.png" },
 };
-const PROJECTS = (Array.isArray(PROJECTS_DATA) ? [...PROJECTS_DATA] : [])
+const mergeProjects = (data) => (Array.isArray(data) ? [...data] : [])
   .sort((a, b) => (b.created || 0) - (a.created || 0))
   .map((p) => ({ ...p, ...(PROJECT_SHOTS[p.id] || {}) }));
 const PROJECT_NAMES = { p2: "energy-forecast", p1: "plant-diagnosis" };
 const projectName = (p) => PROJECT_NAMES[p.id] || p.title;
 const projectRecordsLabel = (p) => p.id === "p1" ? "개발 기록" : "실험 기록";
-const PROJECT_MENU = [...PROJECTS].sort((a, b) => {
+const projectMenu = (projects) => [...projects].sort((a, b) => {
   const order = (p) => p.id === "p2" ? 0 : p.id === "p1" ? 1 : 2;
   return order(a) - order(b);
 });
@@ -383,6 +383,10 @@ function TocLinks({ headings, active }) {
 
 export default function StudyGazette() {
   const [posts, setPosts] = useState(null);
+  const [projectData, setProjectData] = useState(PROJECTS_DATA);
+  const [contentError, setContentError] = useState("");
+  const PROJECTS = useMemo(() => mergeProjects(projectData), [projectData]);
+  const PROJECT_MENU = useMemo(() => projectMenu(PROJECTS), [PROJECTS]);
   const [route, setRoute] = useState({ name: "home" });
   const [lightbox, setLightbox] = useState(null); // 원본 보기용 이미지 src
 
@@ -397,6 +401,33 @@ export default function StudyGazette() {
   useEffect(() => {
     const arr = Array.isArray(POSTS_DATA) && POSTS_DATA.length ? POSTS_DATA : DEMO;
     setPosts(arr.map((x) => ({ category: "기타", pinned: false, tags: [], ...x })));
+    let active = true;
+    let pending = false;
+    let lastCheck = 0;
+    const controller = new AbortController();
+    const refresh = async () => {
+      if (pending) return;
+      pending = true;
+      lastCheck = Date.now();
+      try {
+        const response = await fetch("/api/content", { cache: "no-store", signal: controller.signal });
+        if (!response.ok) throw new Error("content refresh");
+        const data = await response.json();
+        if (!Array.isArray(data.posts) || !Array.isArray(data.projects)) throw new Error("invalid content");
+        if (active) {
+          setPosts(data.posts);
+          setProjectData(data.projects);
+          setContentError(data.source === "snapshot" ? "현재 저장된 글을 표시하고 있습니다. 노션 자동 갱신 연결이 필요합니다." : "");
+        }
+      } catch (error) {
+        if (active && error.name !== "AbortError") setContentError("최신 글을 불러오지 못해 이전 내용을 표시하고 있습니다. 잠시 후 다시 확인해 주세요.");
+      } finally { pending = false; }
+    };
+    const onFocus = () => { if (Date.now() - lastCheck >= 30000) refresh(); };
+    refresh();
+    const timer = setInterval(() => { if (!document.hidden) refresh(); }, 60000);
+    window.addEventListener("focus", onFocus);
+    return () => { active = false; controller.abort(); clearInterval(timer); window.removeEventListener("focus", onFocus); };
   }, []);
 
   /* 라이트박스: Esc로 닫기 */
@@ -564,6 +595,7 @@ export default function StudyGazette() {
       </aside>}
 
       <main className="content">
+        {contentError && <p className="search-answer" role="status">{contentError}</p>}
         {route.name === "home" && <section className="page-section" id="home-view">
           <header className="page-header"><h1 className="page-title">Front Page</h1><p className="page-intro">AI 엔지니어링을 공부하며 남기는 기록장입니다.</p></header>
           <div className="front-layout"><div className="front-feed">

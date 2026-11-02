@@ -16,6 +16,7 @@ import { fetch as undiciFetch, Agent } from "undici";
 import { writeFile, mkdir, rm } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { createNotionFetch } from "./notion-fetch.mjs";
 
 const TOKEN = process.env.NOTION_TOKEN;
 // DB id는 비밀이 아니므로 기본값 하드코딩 (필요 시 환경변수로 덮어쓰기)
@@ -37,7 +38,7 @@ const dispatcher = new Agent({
 });
 const freshFetch = (url, init = {}) => undiciFetch(url, { ...init, dispatcher });
 
-const notion = new Client({ auth: TOKEN, fetch: freshFetch });
+const notion = new Client({ auth: TOKEN, fetch: createNotionFetch(freshFetch) });
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const OUT_PATH = resolve(__dirname, "../data/projects.json");

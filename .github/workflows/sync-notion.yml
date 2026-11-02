@@ -1,9 +1,8 @@
 name: Sync Notion → posts.json / projects.json
 
 on:
-  schedule:
-    - cron: "0 15 * * 0" # 매주 1회 자동 동기화 (일요일 UTC 15:00 = 월요일 KST 00:00)
-  workflow_dispatch: {} # Actions 탭에서 "Run workflow" 수동 실행
+  # 기존 실행 기록을 유지하기 위해 파일을 남긴다. 글은 사이트에서 직접 갱신한다.
+  workflow_dispatch: {}
 
 # 자동 커밋을 위해 쓰기 권한 부여
 permissions:
@@ -16,6 +15,7 @@ concurrency:
 
 jobs:
   sync:
+    if: ${{ false }} # 기존 파일 동기화는 중단. 다시 활성화하기 전 직접 연결 설정을 확인할 것.
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
