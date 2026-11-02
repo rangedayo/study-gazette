@@ -49,7 +49,7 @@ button[disabled]{cursor:default;color:var(--muted)}
 .article-body p{margin:16px 0;line-height:1.9;overflow-wrap:anywhere}
 .article-body>p:first-child{margin-top:0}
 .article-body h2{font-size:var(--content-section-size);font-weight:600;line-height:1.6;letter-spacing:-.5px;margin:36px 0 12px;color:var(--ink);scroll-margin-top:28px;word-break:keep-all}
-.article-body h3{font-size:var(--content-section-size);font-weight:600;margin:25px 0 10px;scroll-margin-top:28px}
+.article-body h3{font-size:var(--content-subsection-size);font-weight:600;line-height:1.6;margin:25px 0 10px;scroll-margin-top:28px}
 .article-body strong{font-weight:600;color:var(--ink)}
 .article-body ul,.article-body ol{padding-left:23px;margin:17px 0}
 .article-body li{padding-left:4px;margin:9px 0;line-height:1.9;overflow-wrap:anywhere}
@@ -62,9 +62,9 @@ button[disabled]{cursor:default;color:var(--muted)}
 .article-body figure{margin:25px 0}
 .article-body figure img{display:block;width:100%;max-height:550px;object-fit:contain}
 .article-body figcaption{font-size:12px;color:var(--muted);margin-top:10px;text-align:center}
-.table-wrap{overflow:auto;margin:22px 0}
-.article-body table{border-collapse:collapse;font-size:14px;width:100%;min-width:320px}
-.article-body th,.article-body td{padding:12px 14px;border-bottom:1px solid var(--line);text-align:left}
+.table-wrap{overflow:auto;margin:16px 0}
+.article-body table{border-collapse:collapse;font-size:.95em;line-height:1.65;width:100%;min-width:320px}
+.article-body th,.article-body td{padding:7px 10px;border-bottom:1px solid var(--line);text-align:left;overflow-wrap:normal}
 .article-body th{background:var(--panel);font-weight:500}
 .article-body hr{border:0;border-top:1px solid var(--line);margin:30px 0}
 .post-tags{display:flex;gap:9px;flex-wrap:wrap;margin:32px 0;padding-top:22px;border-top:1px solid var(--line)}
@@ -283,7 +283,7 @@ button[disabled]{cursor:default;color:var(--muted)}
 .featured:hover,.project-card:hover,.issue-card:hover{transform:none}
 }
 .featured h2,.issue-card h3,.project-card h2,.editor-box p{overflow-wrap:anywhere}
-.gz{--list-title-size:19px;--content-title-size:28px;--content-section-size:18px;--content-body-size:14px}
+.gz{--list-title-size:19px;--content-title-size:28px;--content-section-size:18px;--content-subsection-size:16px;--content-body-size:14px}
 .post-card h2,#home-view .issue-card h3{font-size:var(--list-title-size);font-weight:600;line-height:1.5;letter-spacing:-.45px}
 #home-view .featured h2{font-size:var(--content-section-size);font-weight:600;line-height:1.5;letter-spacing:-.55px;margin:13px 0}
 .featured-label{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
@@ -308,7 +308,7 @@ button[disabled]{cursor:default;color:var(--muted)}
 .article-body .g-img{width:auto;max-width:100%;height:auto;max-height:none;margin:auto;cursor:zoom-in}
 .article-body .g-toggle{margin:16px 0;border-left:1px solid var(--line);padding-left:16px}
 .g-toggle summary{cursor:pointer;font-weight:500}
-.g-table-wrap{overflow-x:auto;margin:22px 0}
+.g-table-wrap{overflow-x:auto;margin:16px 0}
 .g-table{min-width:320px}
 .g-mermaid{margin:24px 0;overflow-x:auto}
 .g-mermaid svg{max-width:100%;height:auto;display:block}

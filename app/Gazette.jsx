@@ -655,7 +655,7 @@ export default function StudyGazette() {
 
         {route.name === "projects" && <section className="page-section" id="projects-view">
           <header className="page-header"><h1 className="page-title">빌드 노트</h1><p className="page-intro">공부가 코드와 제품이 된 기록</p></header>
-          <div className="project-grid">{PROJECTS.map(p => <RouteLink key={p.id} className="project-card" to={{ name: "project", id: p.id }} goTo={goTo}>
+          <div className="project-grid">{PROJECT_MENU.map(p => <RouteLink key={p.id} className="project-card" to={{ name: "project", id: p.id }} goTo={goTo}>
             <div className="project-cover"><ProjImage src={p.thumb} seed={p.id} alt={p.title + " 화면"} fit="contain" /></div>
             <div className="project-card-content"><div className="project-kind">{p.kind}</div><h2>{p.title}</h2><p>{p.summary}</p>
               <div className="stack-tags">{(p.stack || []).map(t => <span className="tag" key={t}>{t}</span>)}</div><span className="read-issue">프로젝트 자세히 보기 →</span>
