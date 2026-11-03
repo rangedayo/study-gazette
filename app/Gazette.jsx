@@ -2,8 +2,6 @@
 
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import "./gazette.css";
-import POSTS_DATA from "../data/posts.json";
-import PROJECTS_DATA from "../data/projects.json";
 
 /* 승인된 문서형 디자인. 글·프로젝트 원고는 Notion 동기화 데이터를 그대로 읽는다. */
 const C = {
@@ -87,21 +85,6 @@ function ProjImage({ src, seed, alt, fit = "cover", pos = "top center" }) {
     : { width: "100%", height: "100%", objectFit: fit, objectPosition: pos, display: "block" };
   return <img src={src} alt={alt} loading="lazy" onError={() => setErr(true)} style={style} />;
 }
-
-const DEMO = [
-  { id: "d1", title: "PaLM-E: 로봇을 제어하는 멀티모달 지능", category: "AI 모델 이론", pinned: true,
-    tags: ["멀티모달", "embodied", "디퓨전"], created: Date.now() - 5 * 864e5, updated: Date.now() - 5 * 864e5,
-    body: "PaLM(거대 언어 모델) + Embodied(현실 세계)의 합성어. 시각·로봇 상태·텍스트를 모두 '단어'처럼 한 줄로 이어 LLM에 넣고, 다음 행동을 텍스트로 출력해 로봇 제어 명령으로 바꾼다.\n\n## 통합형 멀티모달\n모든 모달리티를 하나의 언어 공간에서 해석하므로 문맥에 맞는 도구 사용 결정에 능숙하다. 대신 거대 모델을 전체 튜닝해야 해 학습 비용이 크다." },
-  { id: "d2", title: "이미지 생성모델의 시작 : GAN과 VAE", category: "AI 모델 이론", pinned: false,
-    tags: ["LatentSpace", "StableDiffusion"], created: Date.now() - 4 * 864e5, updated: Date.now() - 4 * 864e5,
-    body: "GAN은 Generator와 Discriminator가 대결하며 성능을 높인다. VAE는 데이터를 평균·표준편차를 따르는 정규분포 상의 점으로 변환해 잠재 공간을 연속적으로 만든다.\n\n최신 모델은 거대한 형체는 확산 모델로 잡고, 미세한 질감·색감 복원은 VAE로 처리한다." },
-  { id: "d3", title: "AI 코딩 에이전트, 이렇게 길들인다", category: "AI 개발 도구", pinned: false,
-    tags: ["Claude Code", "skill", "MCP"], created: Date.now() - 3 * 864e5, updated: Date.now() - 3 * 864e5,
-    body: "agents.md에 프로젝트 규칙과 선호 도구를 적어두면 매번 같은 잔소리를 반복할 필요가 없다. Karpathy 가이드라인은 'AI 코딩의 잔병 치료제'로, CLAUDE.md 한 파일에 규칙 4개를 박는 가장 가벼운 형태다." },
-  { id: "d4", title: "ML 배포 워크플로우 — 당신은 구글이 아닙니다", category: "MLOps / 배포", pinned: false,
-    tags: ["MLOps", "배포", "FoundationModel"], created: Date.now() - 2 * 864e5, updated: Date.now() - 2 * 864e5,
-    body: "핵심 질문은 '우리가 정말 이 문제를 ML로 풀어야 하는가?' 규칙 기반으로 80% 성능이 나오면 그게 더 경제적이다. 2026년 현재 많은 NLP 과제는 Foundation Model API 호출만으로 충분하다.\n\n처음부터 거대한 인프라를 구축하지 마라. 수동으로 주 1회 재학습도 훌륭한 초기 플라이휠이다." },
-];
 
 /* 프로젝트 스크린샷(히어로·썸네일)은 코드에서 관리 — projects.json(텍스트)와 id로 병합.
    스크린샷 교체는 이 맵을 수정하면 된다. */
@@ -381,10 +364,10 @@ function TocLinks({ headings, active }) {
   }}>{inlineMd(h.text)}</a>);
 }
 
-export default function StudyGazette() {
-  const [posts, setPosts] = useState(null);
-  const [projectData, setProjectData] = useState(PROJECTS_DATA);
-  const [contentError, setContentError] = useState("");
+export default function StudyGazette({ initialContent }) {
+  const [posts, setPosts] = useState(() => initialContent.posts.map((x) => ({ category: "기타", pinned: false, tags: [], ...x })));
+  const [projectData, setProjectData] = useState(initialContent.projects);
+  const [contentError, setContentError] = useState(initialContent.source === "snapshot" ? "현재 저장된 글을 표시하고 있습니다. 노션 자동 갱신 연결이 필요합니다." : "");
   const PROJECTS = useMemo(() => mergeProjects(projectData), [projectData]);
   const PROJECT_MENU = useMemo(() => projectMenu(PROJECTS), [PROJECTS]);
   const [route, setRoute] = useState({ name: "home" });
@@ -399,8 +382,6 @@ export default function StudyGazette() {
   const [activeHeading, setActiveHeading] = useState(null);
 
   useEffect(() => {
-    const arr = Array.isArray(POSTS_DATA) && POSTS_DATA.length ? POSTS_DATA : DEMO;
-    setPosts(arr.map((x) => ({ category: "기타", pinned: false, tags: [], ...x })));
     let active = true;
     let pending = false;
     let lastCheck = 0;
@@ -550,8 +531,6 @@ export default function StudyGazette() {
     window.addEventListener("keydown", shortcut);
     return () => window.removeEventListener("keydown", shortcut);
   }, [goTo]);
-
-  if (!posts) return <div style={{ minHeight: "100vh", background: C.bg }} />;
 
   const theme = {
     "--bg": C.bg, "--panel": C.panel, "--card": C.card, "--ink": C.ink, "--body": C.body,
