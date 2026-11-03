@@ -64,7 +64,8 @@ button[disabled]{cursor:default;color:var(--muted)}
 .article-body figcaption{font-size:12px;color:var(--muted);margin-top:10px;text-align:center}
 .table-wrap{overflow:auto;margin:16px 0}
 .article-body table{border-collapse:collapse;font-size:.95em;line-height:1.65;width:100%;min-width:320px}
-.article-body th,.article-body td{padding:7px 10px;border-bottom:1px solid var(--line);text-align:left;overflow-wrap:normal}
+.article-body th,.article-body td{padding:7px 10px;border-bottom:1px solid var(--line);text-align:left;word-break:keep-all;overflow-wrap:normal}
+.article-body .g-table-url{overflow-wrap:anywhere}
 .article-body th{background:var(--panel);font-weight:500}
 .article-body hr{border:0;border-top:1px solid var(--line);margin:30px 0}
 .post-tags{display:flex;gap:9px;flex-wrap:wrap;margin:32px 0;padding-top:22px;border-top:1px solid var(--line)}

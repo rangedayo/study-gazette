@@ -203,11 +203,11 @@ function Body({ text, onImg }) {
         <div key={k} className="g-table-wrap">
           <table className="g-table">
             {hasHead ? (
-              <thead><tr>{n.header.map((c, ci) => <th key={ci}>{inlineMd(c)}</th>)}</tr></thead>
+              <thead><tr>{n.header.map((c, ci) => <th key={ci} className={/https?:\/\//i.test(c) ? "g-table-url" : undefined}>{inlineMd(c)}</th>)}</tr></thead>
             ) : null}
             <tbody>
               {n.rows.map((row, ri) => (
-                <tr key={ri}>{row.map((c, ci) => <td key={ci}>{inlineMd(c)}</td>)}</tr>
+                <tr key={ri}>{row.map((c, ci) => <td key={ci} className={/https?:\/\//i.test(c) ? "g-table-url" : undefined}>{inlineMd(c)}</td>)}</tr>
               ))}
             </tbody>
           </table>
