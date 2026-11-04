@@ -433,7 +433,8 @@ export default function StudyGazette({ initialContent }) {
 
   const sorted = useMemo(() => [...(posts || [])].sort((a, b) => (b.created || b.updated) - (a.created || a.updated)), [posts]);
   const studyPosts = useMemo(() => sorted.filter((p) => !p.projectId), [sorted]);
-  const featured = useMemo(() => studyPosts.find((p) => p.pinned) || studyPosts[0], [studyPosts]);
+  const featuredProject = PROJECTS.find((p) => p.id === "p2");
+  const featured = useMemo(() => featuredProject || studyPosts.find((p) => p.pinned) || studyPosts[0], [featuredProject, studyPosts]);
   const rest = useMemo(() => studyPosts.filter((p) => p.id !== featured?.id), [studyPosts, featured]);
   const cats = useMemo(() => {
     const m = {}; studyPosts.forEach((p) => (m[p.category] = (m[p.category] || 0) + 1));
@@ -540,8 +541,8 @@ export default function StudyGazette({ initialContent }) {
   const studyRoute = { name: "cat", value: studyCategory };
   const navItems = [
     { label: "Front Page", to: { name: "home" }, active: route.name === "home" },
-    { label: "Study Notes", to: studyRoute, active: inCategory || (route.name === "post" && !postProject) },
     { label: "Projects", to: { name: "projects" }, active: route.name === "projects" || inProjects },
+    { label: "Study Notes", to: studyRoute, active: inCategory || (route.name === "post" && !postProject) },
     { label: "Profile", to: { name: "about" }, active: route.name === "about" },
     { label: "Search", to: { name: "archive" }, active: route.name === "archive" },
   ];
@@ -578,10 +579,10 @@ export default function StudyGazette({ initialContent }) {
         {route.name === "home" && <section className="page-section" id="home-view">
           <header className="page-header"><h1 className="page-title">Front Page</h1><p className="page-intro">AI 엔지니어링을 공부하며 남기는 기록장입니다.</p></header>
           <div className="front-layout"><div className="front-feed">
-            {featured && <RouteLink className="featured" to={{ name: "post", id: featured.id }} goTo={goTo}>
+            {featured && <RouteLink className="featured" to={{ name: featuredProject ? "project" : "post", id: featured.id }} goTo={goTo}>
               {featured.thumb && <div className="featured-image"><ProjImage src={featured.thumb} seed={featured.id} alt={featured.title + " 커버"} /></div>}
-              <div className="featured-content"><div className="featured-label"><span className="featured-badge">대표 글</span><span className="featured-category">{featured.category}</span></div>
-                <h2>{featured.title}</h2><p>{clean(featured.body).slice(0, 210)}</p><span className="read-issue">글 읽기 →</span>
+              <div className="featured-content"><div className="featured-label"><span className="featured-badge">대표 글</span><span className="featured-category">{featuredProject ? featured.kind : featured.category}</span></div>
+                <h2>{featured.title}</h2><p>{featuredProject ? featured.summary : clean(featured.body).slice(0, 210)}</p><span className="read-issue">{featuredProject ? "프로젝트 보기 →" : "글 읽기 →"}</span>
               </div>
             </RouteLink>}
             <div className="section-head"><h2 className="section-title">Latest Issues</h2><RouteLink className="quiet-link" to={studyRoute} goTo={goTo}>Study Notes 보기 →</RouteLink></div>
@@ -590,7 +591,7 @@ export default function StudyGazette({ initialContent }) {
               <div className="card-tags">{(p.tags || []).slice(0, 2).map(t => <span key={t}>#{t}</span>)}</div>
             </RouteLink>)}</div>
             {PROJECTS.length > 0 && <><div className="section-head"><h2 className="section-title">Projects</h2><RouteLink className="quiet-link" to={{ name: "projects" }} goTo={goTo}>빌드 노트 보기 →</RouteLink></div>
-              <div className="issue-grid">{PROJECTS.map(p => <RouteLink key={p.id} className="issue-card" to={{ name: "project", id: p.id }} goTo={goTo}>
+              <div className="issue-grid">{PROJECT_MENU.map(p => <RouteLink key={p.id} className="issue-card" to={{ name: "project", id: p.id }} goTo={goTo}>
                 <div className="card-meta">{p.kind}</div><h3>{p.title}</h3><p>{p.summary}</p><span className="quiet-link">프로젝트 보기 →</span>
               </RouteLink>)}</div></>}
           </div><aside className="front-sidebar">
