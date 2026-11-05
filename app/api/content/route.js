@@ -1,7 +1,8 @@
 import { getContent } from "../../../lib/content";
 
 export const dynamic = "force-dynamic";
-export const maxDuration = 60;
+// 변환 규칙이 바뀐 뒤 기존 글의 캐시를 처음 준비할 때도 끝까지 완료한다.
+export const maxDuration = 180;
 
 export async function GET() {
   try {

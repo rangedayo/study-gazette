@@ -165,6 +165,7 @@ function Mermaid({ chart }) {
 /* 인라인 마크다운 → React 노드. 목차의 링크 안에서는 외부 링크를 중첩하지 않는다. */
 const inlineMd = (s, allowLinks = true) => {
   const render = nodes => nodes.map((node, i) => {
+    if (node.type === "break") return <br key={i} />;
     if (node.type === "link") return allowLinks
       ? <a key={i} href={node.href} target="_blank" rel="noopener noreferrer">{render(node.children)}</a>
       : <span key={i}>{render(node.children)}</span>;
