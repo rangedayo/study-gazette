@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import "./gazette.css";
+import { parseInlineMarkdown, inlinePlainText } from "../lib/inline-markdown.mjs";
+import { mergeTableRows } from "../lib/table-layout.mjs";
 
 /* 승인된 문서형 디자인. 글·프로젝트 원고는 Notion 동기화 데이터를 그대로 읽는다. */
 const C = {
@@ -103,9 +105,34 @@ const projectMenu = (projects) => [...projects].sort((a, b) => {
   return order(a) - order(b);
 });
 
-/* Mermaid 다이어그램 — 클라이언트에서만 동적 렌더. 로딩/실패 시 코드 블록으로 폴백 */
+function DiagramDialog({ diagram, onClose }) {
+  const dialog = useRef(null);
+  useEffect(() => {
+    const modal = dialog.current;
+    const previousFocus = document.activeElement;
+    const previousOverflow = document.body.style.overflow;
+    modal.showModal();
+    document.body.style.overflow = "hidden";
+    return () => {
+      modal.close();
+      document.body.style.overflow = previousOverflow;
+      previousFocus?.focus({ preventScroll: true });
+    };
+  }, []);
+  return <dialog ref={dialog} className="g-diagram-dialog" aria-label="다이어그램 확대 보기"
+    onCancel={e => { e.preventDefault(); onClose(); }}
+    onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+    <div className="g-diagram-toolbar"><button autoFocus type="button" onClick={onClose}>닫기 ×</button></div>
+    <div className="g-diagram-viewport" tabIndex={0} role="region" aria-label="확대한 다이어그램, 방향키로 이동">
+      <div className="g-mermaid-drawing" style={{ width: diagram.width * 1.25 }} dangerouslySetInnerHTML={{ __html: diagram.svg }} />
+    </div>
+  </dialog>;
+}
+
+/* Mermaid 다이어그램 — 본문에서는 기본 배율 90%와 본문 폭 중 작은 쪽에 맞춘다. */
 function Mermaid({ chart }) {
-  const [svg, setSvg] = useState("");
+  const [diagram, setDiagram] = useState(null);
+  const [expanded, setExpanded] = useState(false);
   const idRef = useRef("mmd-" + Math.floor(Math.random() * 1e9).toString(36));
   useEffect(() => {
     let cancelled = false;
@@ -113,28 +140,42 @@ function Mermaid({ chart }) {
       try {
         const mermaid = (await import("mermaid")).default;
         mermaid.initialize({ startOnLoad: false, theme: "neutral", securityLevel: "loose",
-          fontFamily: FB });
+          fontFamily: FB, fontSize: 14, themeVariables: { fontSize: "14px" },
+          flowchart: { useMaxWidth: false },
+          sequence: { useMaxWidth: false, actorFontSize: 14, noteFontSize: 14, messageFontSize: 14 } });
         const { svg } = await mermaid.render(idRef.current, chart);
-        if (!cancelled) setSvg(svg);
-      } catch (e) { if (!cancelled) setSvg(""); }
+        const element = new DOMParser().parseFromString(svg, "image/svg+xml").documentElement;
+        const width = Number(element.getAttribute("viewBox")?.trim().split(/\s+/)[2]);
+        if (!cancelled && width > 0) setDiagram({ svg, width });
+      } catch (e) { if (!cancelled) setDiagram(null); }
     })();
     return () => { cancelled = true; };
   }, [chart]);
-  if (!svg) return <pre className="g-pre">{chart}</pre>;
-  return <div className="g-mermaid" dangerouslySetInnerHTML={{ __html: svg }} />;
+  if (!diagram) return <pre className="g-pre">{chart}</pre>;
+  return <div className="g-mermaid">
+    <div className="g-diagram-toolbar"><button type="button" onClick={() => setExpanded(true)}>크게 보기 ↗</button></div>
+    <button className="g-mermaid-preview" type="button" style={{ width: diagram.width * 0.9 }}
+      aria-label="다이어그램 확대 보기" onClick={() => setExpanded(true)}>
+      <span className="g-mermaid-drawing" dangerouslySetInnerHTML={{ __html: diagram.svg }} />
+    </button>
+    {expanded && <DiagramDialog diagram={diagram} onClose={() => setExpanded(false)} />}
+  </div>;
 }
 
-/* 인라인 마크다운(***굵은이태릭***·**굵게**·*이태릭*·`코드`) → React 노드 */
-const inlineMd = (s) =>
-  String(s)
-    .split(/(\*\*\*[^*]+\*\*\*|\*\*[^*]+\*\*|\*[^*]+\*|`[^`]+`)/g)
-    .map((p, i) =>
-      p?.startsWith("***") ? <strong key={i}><em>{p.slice(3, -3)}</em></strong> :
-      p?.startsWith("**") ? <strong key={i}>{p.slice(2, -2)}</strong> :
-      p?.startsWith("*") ? <em key={i}>{p.slice(1, -1)}</em> :
-      p?.startsWith("`") ? <code key={i} className="g-code">{p.slice(1, -1)}</code> :
-      <span key={i}>{p}</span>
-    );
+/* 인라인 마크다운 → React 노드. 목차의 링크 안에서는 외부 링크를 중첩하지 않는다. */
+const inlineMd = (s, allowLinks = true) => {
+  const render = nodes => nodes.map((node, i) => {
+    if (node.type === "link") return allowLinks
+      ? <a key={i} href={node.href} target="_blank" rel="noopener noreferrer">{render(node.children)}</a>
+      : <span key={i}>{render(node.children)}</span>;
+    if (node.type === "bold-italic") return <strong key={i}><em>{render(node.children)}</em></strong>;
+    if (node.type === "bold") return <strong key={i}>{render(node.children)}</strong>;
+    if (node.type === "italic") return <em key={i}>{render(node.children)}</em>;
+    if (node.type === "code") return <code key={i} className="g-code">{node.text}</code>;
+    return <span key={i}>{node.text}</span>;
+  });
+  return render(parseInlineMarkdown(s));
+};
 
 /* 한 줄을 종류 + 들여쓰기 깊이(공백 2칸 = 1단계)로 분류 */
 const classifyLine = (raw) => {
@@ -203,11 +244,11 @@ function Body({ text, onImg }) {
         <div key={k} className="g-table-wrap">
           <table className="g-table">
             {hasHead ? (
-              <thead><tr>{n.header.map((c, ci) => <th key={ci} className={/https?:\/\//i.test(c) ? "g-table-url" : undefined}>{inlineMd(c)}</th>)}</tr></thead>
+              <thead><tr>{n.header.map((c, ci) => <th key={ci} className={/https?:\/\//i.test(inlinePlainText(c)) ? "g-table-url" : undefined}>{inlineMd(c)}</th>)}</tr></thead>
             ) : null}
             <tbody>
-              {n.rows.map((row, ri) => (
-                <tr key={ri}>{row.map((c, ci) => <td key={ci} className={/https?:\/\//i.test(c) ? "g-table-url" : undefined}>{inlineMd(c)}</td>)}</tr>
+              {mergeTableRows(n.rows).map((row, ri) => (
+                <tr key={ri}>{row.map(cell => <td key={cell.column} rowSpan={cell.rowSpan > 1 ? cell.rowSpan : undefined} className={/https?:\/\//i.test(inlinePlainText(cell.text)) ? "g-table-url" : undefined}>{inlineMd(cell.text)}</td>)}</tr>
               ))}
             </tbody>
           </table>
@@ -321,7 +362,7 @@ function Body({ text, onImg }) {
   return <>{renderNodes(buildTree(items, 0, 0))}</>;
 }
 
-const clean = (b) => String(b || "").replace(/```[\s\S]*?```/g, " ").replace(/!\[[^\]]*\]\([^)]*\)/g, "").replace(/^#{1,6}\s+.*$/gm, "").replace(/[*>`|]/g, "").replace(/\s+/g, " ").trim();
+const clean = (b) => inlinePlainText(String(b || "").replace(/```[\s\S]*?```/g, " ").replace(/!\[[^\]]*\]\([^)]*\)/g, "").replace(/^#{1,6}\s+.*$/gm, "")).replace(/[*>`|]/g, "").replace(/\s+/g, " ").trim();
 const fmt = (t) => new Date(t).toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric", timeZone: "Asia/Seoul" });
 const readMin = (b) => Math.max(1, Math.ceil(String(b || "").length / 600)) + "분 읽기";
 
@@ -361,7 +402,7 @@ function TocLinks({ headings, active }) {
     for (let parent = target.parentElement; parent; parent = parent.parentElement) if (parent.tagName === "DETAILS") parent.open = true;
     target.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth", block: "start" });
     target.tabIndex = -1; target.focus({ preventScroll: true });
-  }}>{inlineMd(h.text)}</a>);
+  }}>{inlineMd(h.text, false)}</a>);
 }
 
 export default function StudyGazette({ initialContent }) {
