@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import "./gazette.css";
 import { parseInlineMarkdown, inlinePlainText } from "../lib/inline-markdown.mjs";
 import { mergeTableRows } from "../lib/table-layout.mjs";
+import { parseVideoMarkdown, stripVideoMarkdown } from "../lib/video-markdown.mjs";
 
 /* 승인된 문서형 디자인. 글·프로젝트 원고는 Notion 동기화 데이터를 그대로 읽는다. */
 const C = {
@@ -184,6 +185,8 @@ const classifyLine = (raw) => {
   const depth = Math.floor(m[1].replace(/\t/g, "  ").length / 2);
   const s = m[2];
   if (s.trim() === "") return { kind: "blank", depth, text: "" };
+  const video = parseVideoMarkdown(s);
+  if (video) return { kind: "video", depth, ...video };
   if (/^!\[[^\]]*\]\([^)]+\)\s*$/.test(s)) return { kind: "img", depth, text: s };
   if (/^### /.test(s)) return { kind: "h3", depth, text: s.slice(4) };
   if (/^## /.test(s)) return { kind: "h2", depth, text: s.slice(3) };
@@ -217,6 +220,18 @@ const buildTree = (items, start, depth) => {
   return nodes;
 };
 
+function BodyVideo({ src, caption }) {
+  const [failed, setFailed] = useState(false);
+  useEffect(() => setFailed(false), [src]);
+  return <figure className="g-fig">
+    <video className="g-video" src={src} controls playsInline preload="metadata" aria-label={caption || "본문 영상"} onError={() => setFailed(true)}>
+      <a href={src} target="_blank" rel="noreferrer">영상 열기 ↗</a>
+    </video>
+    {caption && <figcaption className="g-cap">{caption}</figcaption>}
+    {failed && <p className="g-video-error" role="status">영상을 불러오지 못했습니다. 새로고침 후 다시 재생하거나 <a href={src} target="_blank" rel="noreferrer">새 탭에서 열어 주세요 ↗</a></p>}
+  </figure>;
+}
+
 function Body({ text, onImg }) {
   let uid = 0;
 
@@ -224,6 +239,7 @@ function Body({ text, onImg }) {
     const k = "L" + uid++;
     if (n.kind === "mermaid") return <Mermaid key={k} chart={n.text} />;
     if (n.kind === "code") return <pre key={k} className="g-pre">{n.text}</pre>;
+    if (n.kind === "video") return <BodyVideo key={k} src={n.src} caption={n.caption} />;
     if (n.kind === "img") {
       const [, rawAlt, src] = n.text.match(/^!\[([^\]]*)\]\(([^)]+)\)/);
       // 캡션 안의 너비 토큰 {50%}·{400px}·{w=60%} → 표시 너비로 적용하고 캡션에선 제거
@@ -363,9 +379,9 @@ function Body({ text, onImg }) {
   return <>{renderNodes(buildTree(items, 0, 0))}</>;
 }
 
-const clean = (b) => inlinePlainText(String(b || "").replace(/```[\s\S]*?```/g, " ").replace(/!\[[^\]]*\]\([^)]*\)/g, "").replace(/^#{1,6}\s+.*$/gm, "")).replace(/[*>`|]/g, "").replace(/\s+/g, " ").trim();
+const clean = (b) => inlinePlainText(stripVideoMarkdown(String(b || "").replace(/```[\s\S]*?```/g, " ")).replace(/!\[[^\]]*\]\([^)]*\)/g, "").replace(/^#{1,6}\s+.*$/gm, "")).replace(/[*>`|]/g, "").replace(/\s+/g, " ").trim();
 const fmt = (t) => new Date(t).toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric", timeZone: "Asia/Seoul" });
-const readMin = (b) => Math.max(1, Math.ceil(String(b || "").length / 600)) + "분 읽기";
+const readMin = (b) => Math.max(1, Math.ceil(stripVideoMarkdown(b || "").length / 600)) + "분 읽기";
 
 // Body와 같은 줄 번호를 사용한다. 코드 블록 안의 #은 목차에서 제외한다.
 const headingsFor = (text) => {

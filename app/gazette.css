@@ -63,6 +63,8 @@ button[disabled]{cursor:default;color:var(--muted)}
 .article-body pre code{border:0;padding:0;background:transparent;font-size:13px}
 .article-body figure{margin:25px 0}
 .article-body figure img{display:block;width:100%;max-height:550px;object-fit:contain}
+.article-body .g-video{display:block;width:100%;max-width:100%;height:auto;border-radius:9px;background:var(--panel)}
+.article-body .g-video-error{font-size:var(--content-body-size);color:var(--muted);text-align:left}
 .article-body figcaption{font-size:12px;color:var(--muted);margin-top:10px;text-align:center}
 .table-wrap{overflow:auto;margin:16px 0}
 .article-body table{border-collapse:collapse;font-size:.95em;line-height:1.65;width:100%;min-width:320px}

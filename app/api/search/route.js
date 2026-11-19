@@ -1,10 +1,11 @@
 import { getContent } from "../../../lib/content";
+import { stripVideoMarkdown } from "../../../lib/video-markdown.mjs";
 
 export const maxDuration = 60;
 
 // 본문에서 마크다운 기호를 걷어내 검색용 발췌를 만든다 (컴포넌트의 clean과 동일 규칙)
 const clean = (b) =>
-  String(b)
+  stripVideoMarkdown(b)
     .replace(/```[\s\S]*?```/g, " ")
     .replace(/[#>*`\[\]]/g, "")
     .replace(/\s+/g, " ")
