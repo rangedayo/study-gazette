@@ -479,7 +479,7 @@ export default function StudyGazette({ initialContent }) {
   const featured = useMemo(() => featuredProject || studyPosts.find((p) => p.pinned) || studyPosts[0], [featuredProject, studyPosts]);
   const rest = useMemo(() => studyPosts.filter((p) => p.id !== featured?.id), [studyPosts, featured]);
   const cats = useMemo(() => {
-    const m = {}; studyPosts.forEach((p) => (m[p.category] = (m[p.category] || 0) + 1));
+    const m = { "에너지 · 환경": 0 }; studyPosts.forEach((p) => (m[p.category] = (m[p.category] || 0) + 1));
     return Object.entries(m).sort((a, b) => b[1] - a[1]);
   }, [studyPosts]);
 
@@ -711,9 +711,10 @@ export default function StudyGazette({ initialContent }) {
 
         {inCategory && <section id="category-view">
           <div className="breadcrumbs"><RouteLink to={{ name: "home" }} goTo={goTo}>Front Page</RouteLink><span className="slash">/</span><span>Study Notes</span></div>
-          <header className="category-header"><h1 className="category-title">{route.value}</h1><p className="category-description">{route.value === "비전 모델" ? "이미지와 멀티모달 모델을 공부하며 남긴 기록." : "이 주제로 공부하며 남긴 기록."}</p></header>
+          <header className="category-header"><h1 className="category-title">{route.value}</h1><p className="category-description">{route.value === "비전 모델" ? "이미지와 멀티모달 모델을 공부하며 남긴 기록." : route.value === "에너지 · 환경" ? "에너지와 환경 분야를 공부하며 남긴 기록." : "이 주제로 공부하며 남긴 기록."}</p></header>
           <div className="list-meta"><span>{catPosts.length}개의 기록</span><span>최근 글부터</span></div>
           <div className="post-list">{catPosts.map(p => <PostCard key={p.id} p={p} goTo={goTo} />)}</div>
+          {!catPosts.length && <p className="empty-result">아직 공개된 글이 없습니다.</p>}
         </section>}
 
         {route.name === "post" && cur && <article id="article-view">
