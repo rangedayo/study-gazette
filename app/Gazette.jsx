@@ -496,7 +496,12 @@ export default function StudyGazette({ initialContent }) {
   const rest = useMemo(() => studyPosts.filter((p) => p.id !== featured?.id), [studyPosts, featured]);
   const cats = useMemo(() => {
     const m = { "에너지 · 환경": 0 }; studyPosts.forEach((p) => (m[p.category] = (m[p.category] || 0) + 1));
-    return Object.entries(m).sort((a, b) => b[1] - a[1]);
+    const order = ["에너지 · 환경", "비전 모델", "언어 모델", "머신러닝 알고리즘", "데이터 관리", "테스트 · 디버깅", "개발 인프라", "기타"];
+    const rank = (category) => {
+      const index = order.indexOf(category);
+      return index < 0 ? order.length : index;
+    };
+    return Object.entries(m).sort(([a], [b]) => rank(a) - rank(b) || a.localeCompare(b, "ko"));
   }, [studyPosts]);
 
   /* 모든 화면 전환은 goTo를 거쳐 URL 해시에 기록 → 브라우저 뒤로가기가 정확히 복원 */
