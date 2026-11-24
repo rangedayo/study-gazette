@@ -17,6 +17,40 @@ const FB = FD;
 const FM = FD;
 const FC = "'DM Mono', ui-monospace, 'Cascadia Code', Consolas, monospace";
 
+const CATEGORY_INTROS = new Map([
+  ["에너지 · 환경", {
+    description: "전기의 기본 원리부터 에너지를 만들고 쓰는 방식, 그 과정이 환경에 미치는 영향까지 살펴봅니다.",
+    topics: "전기의 원리, 발전 설비, 전력망",
+  }],
+  ["비전 모델", {
+    description: "이미지를 분류하거나 분할하고 새로 생성하는 모델을 살펴봅니다. 이미지와 텍스트를 함께 다루는 멀티모달 모델도 정리했습니다.",
+    topics: "ViT, SAM, 이미지 생성, 비전 언어 모델",
+  }],
+  ["언어 모델", {
+    description: "BERT와 GPT 등 트랜스포머 계열 모델의 구조를 비교합니다. 텍스트 데이터 증강과 언어 모델의 학습 방법도 정리했습니다.",
+    topics: "트랜스포머, 텍스트 데이터 증강, 지시 학습, RLHF",
+  }],
+  ["머신러닝 알고리즘", {
+    description: "분류와 회귀, 군집화와 차원 축소에 쓰이는 머신러닝 알고리즘의 원리와 쓰임을 정리했습니다.",
+    topics: "사이킷런, 지도학습, 비지도학습",
+  }],
+  ["데이터 관리", {
+    description: "머신러닝에 쓰는 데이터를 저장하고 라벨을 붙이는 방법을 살펴봅니다. 데이터 품질을 점검하고 변경 이력을 관리하는 방법도 정리했습니다.",
+    topics: "데이터 저장, 라벨링, 품질 점검, 버전 관리와 자동화",
+  }],
+  ["테스트 · 디버깅", {
+    description: "머신러닝 모델을 테스트하고 문제가 생겼을 때 원인을 찾는 방법을 정리했습니다. 대규모 언어 모델의 평가와 모니터링도 다룹니다.",
+    topics: "테스트 수트, 모델 오류 진단, 언어 모델 평가",
+  }],
+  ["개발 인프라", {
+    description: "모델 학습에 맞는 GPU를 고르는 기준과 여러 GPU로 작업을 나눠 학습하는 방법을 다룹니다.",
+    topics: "GPU 선택, 분산 학습",
+  }],
+  ["기타", {
+    description: "여러 주제에 걸친 공부 기록을 모았습니다.",
+  }],
+]);
+
 const GitHubMark = () => (
   <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
     <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/>
@@ -496,7 +530,7 @@ export default function StudyGazette({ initialContent }) {
   const rest = useMemo(() => studyPosts.filter((p) => p.id !== featured?.id), [studyPosts, featured]);
   const cats = useMemo(() => {
     const m = { "에너지 · 환경": 0 }; studyPosts.forEach((p) => (m[p.category] = (m[p.category] || 0) + 1));
-    const order = ["에너지 · 환경", "비전 모델", "언어 모델", "머신러닝 알고리즘", "데이터 관리", "테스트 · 디버깅", "개발 인프라", "기타"];
+    const order = [...CATEGORY_INTROS.keys()];
     const rank = (category) => {
       const index = order.indexOf(category);
       return index < 0 ? order.length : index;
@@ -554,6 +588,7 @@ export default function StudyGazette({ initialContent }) {
 
   const reading = route.name === "post" || route.name === "project";
   const inCategory = route.name === "cat";
+  const categoryIntro = inCategory ? CATEGORY_INTROS.get(route.value) : undefined;
   const activeCategory = inCategory ? route.value : cur?.category;
   const studyCategory = activeCategory || (cats.some(([c]) => c === "비전 모델") ? "비전 모델" : cats[0]?.[0]);
   const headings = useMemo(() => {
@@ -640,7 +675,7 @@ export default function StudyGazette({ initialContent }) {
       <main className="content">
         {contentError && <p className="search-answer" role="status">{contentError}</p>}
         {route.name === "home" && <section className="page-section" id="home-view">
-          <header className="page-header"><h1 className="page-title">Front Page</h1><p className="page-intro">AI 엔지니어링을 공부하며 남기는 기록장입니다.</p></header>
+          <header className="page-header"><h1 className="page-title">Front Page</h1><p className="page-intro">태양광 발전과 전력망을 다룬 글, 발전량 예측과 ESS 운영 실험, AI 엔지니어링 노트를 모았습니다.</p></header>
           <div className="front-layout"><div className="front-feed">
             {featured && <RouteLink className="featured" to={{ name: featuredProject ? "project" : "post", id: featured.id }} goTo={goTo}>
               {featured.thumb && <div className="featured-image"><ProjImage src={featured.thumb} seed={featured.id} alt={featured.title + " 커버"} /></div>}
@@ -659,7 +694,7 @@ export default function StudyGazette({ initialContent }) {
               </RouteLink>)}</div></>}
           </div><aside className="front-sidebar">
             <div className="editor-box"><h2 className="section-title">The Editor</h2><img className="editor-photo" src="/profile.jpg" alt="최사랑" /><strong>최사랑</strong>
-              <p>논문 읽다 막힌 부분, 직접 만들어본 파이프라인, 헷갈리던 개념을 그때그때 담아두는 개인적인 공간이에요.</p>
+              <p>에너지와 환경 분야에서 일하고 싶어 공부한 것과 직접 만들어 본 것을 기록합니다. 요즘은 전기가 만들어지고 쓰이는 과정을 공부하고 있습니다.</p>
               <RouteLink className="quiet-link" to={{ name: "about" }} goTo={goTo}>Profile →</RouteLink>
             </div>
             <div><h2 className="section-title">Categories</h2><div className="category-menu">{cats.map(([c, count]) => <RouteLink key={c} to={{ name: "cat", value: c }} goTo={goTo}>{c}<span>{count}</span></RouteLink>)}</div></div>
@@ -667,11 +702,13 @@ export default function StudyGazette({ initialContent }) {
         </section>}
 
         {route.name === "about" && <article className="page-section" id="profile-view">
-          <header className="page-header"><h1 className="page-title">최사랑</h1><p className="page-intro">Editor · MLOps &amp; ML Systems</p></header>
+          <header className="page-header"><h1 className="page-title">최사랑</h1><p className="page-intro">온실가스를 줄이는 기술이 현장에서 쓰이도록 돕는 일을 하고 싶습니다.</p></header>
           <div className="profile-layout"><img className="profile-portrait" src="/profile.jpg" alt="최사랑" /><div className="profile-content article-body">
-            <p>완성된 결론보다 ‘이해해가는 과정’을 남기는 데 의미를 둡니다.</p>
-            <p>비전공자로 출발해 AI 엔지니어로의 전환을 준비하고 있습니다. 매일 논문과 개념을 하나씩 제 것으로 만들며, 기초부터 차근차근 밟아가는 중입니다. 화려함을 좇기보다 객관적인 평가를 통해 시스템의 동작을 끝까지 검증하고 통제하는 방식을 지향합니다.</p>
-            <h2>관심 분야</h2><ul><li>MLOps 파이프라인 설계와 모델 배포 전략</li><li>머신러닝 시스템 아키텍처와 인프라</li><li>멀티모달 · 생성 모델의 동작 원리</li><li>AI 개발 도구와 코딩 에이전트 활용</li></ul>
+            <p>순천만 습지를 가로지르는 긴 다리 한가운데에서 풍경을 한 바퀴 둘러본 적이 있습니다. 숲은 울창했고 습지는 끝이 보이지 않을 만큼 펼쳐져 있었습니다. 사람들이 오가는데도 저만 자연 한가운데 떠 있는 것 같았고, 제가 점 하나처럼 작게 느껴졌습니다. 짧은 순간이었지만 황홀했습니다. 이 풍경을 다른 사람들도 계속 볼 수 있으면 좋겠다고 생각했습니다. 3년 넘게 환경단체를 후원해 왔지만, 그날부터는 기후 문제를 위해 제가 직접 할 수 있는 일을 찾기 시작했습니다.</p>
+            <p>그전에는 6년 넘게 매장을 운영하는 매니저로 일했습니다. 한 곳에서 4년 3개월 동안 매출 정산과 발주, 재고 관리, 직원 교육을 맡았습니다. 손님이 머그컵을 가져오면 할인해 주고 분리수거도 꼼꼼히 챙기며, 가게 안에서 환경을 위해 할 수 있는 일을 하려고 노력했습니다.</p>
+            <p>가게를 살리는 브랜딩을 공부하다 AI를 깊이 알아야겠다고 느껴 6개월 동안 AI 과정을 들었고, 평소 관심 있던 태양광과 배터리를 프로젝트 주제로 골랐습니다. 예측이 정확할수록 수익도 오를 거라 생각했지만, 1년치 데이터로 시뮬레이션해 보니 완벽한 예측과 실제 모델 예측의 수익 차이는 0.08%에 그쳤습니다. 그래서 모델 대신 운영 방식을 바꿨고, 같은 예측으로 시뮬레이션 순수익이 49.5% 늘었습니다(전국 17개 시도 합산 가정). 발전소가 데이터를 어떻게 측정하는지 궁금해 부품을 사서 작은 태양광 측정기도 직접 조립했습니다.</p>
+            <p>프로젝트를 하며 좋은 기술도 설비를 들이고 인허가를 받고 전기를 사고파는 일이 받쳐 줘야 현장에서 쓰인다는 것을 알게 됐습니다. 그래서 일자리를 고를 때 이 분야 안에서 일할 수 있는지를 가장 먼저 봅니다. 언젠가는 수소 전환처럼 온실가스를 줄이는 기술이 실제 현장에서 쓰이도록 돕고 싶습니다. AI를 그 일에 어떻게 쓸 수 있을지는 아직 답을 찾는 중이고, 찾은 것은 이곳에 계속 기록하려고 합니다.</p>
+            <h2>관심 분야</h2><ul><li>공장과 건물에서 에너지를 덜 쓰게 하는 설비와 시스템</li><li>태양광 같은 재생에너지 사업과 전력망 연결</li><li>온실가스를 줄이는 수소 전환 기술</li><li>탄소 배출량을 정확하게 측정하는 방법</li><li>이미 버려진 자원의 재활용</li></ul>
             <h2>연락</h2><div className="profile-contact"><a href="mailto:rangedayo@naver.com">rangedayo@naver.com</a><a href="https://github.com/rangedayo" target="_blank" rel="noreferrer">GitHub ↗</a></div>
           </div></div>
         </article>}
@@ -697,7 +734,7 @@ export default function StudyGazette({ initialContent }) {
         </section>}
 
         {route.name === "projects" && <section className="page-section" id="projects-view">
-          <header className="page-header"><h1 className="page-title">빌드 노트</h1><p className="page-intro">공부가 코드와 제품이 된 기록</p></header>
+          <header className="page-header"><h1 className="page-title">빌드 노트</h1><p className="page-intro">태양광 발전량 예측과 ESS 운영 시뮬레이션, 식물 사진 진단 서비스의 설계와 실험 과정을 담았습니다.</p></header>
           <div className="project-grid">{PROJECT_MENU.map(p => <RouteLink key={p.id} className="project-card" to={{ name: "project", id: p.id }} goTo={goTo}>
             <div className="project-cover"><ProjImage src={p.thumb} seed={p.id} alt={p.title + " 화면"} fit="contain" /></div>
             <div className="project-card-content"><div className="project-kind">{p.kind}</div><h2>{p.title}</h2><p>{p.summary}</p>
@@ -732,7 +769,7 @@ export default function StudyGazette({ initialContent }) {
 
         {inCategory && <section id="category-view">
           <div className="breadcrumbs"><RouteLink to={{ name: "home" }} goTo={goTo}>Front Page</RouteLink><span className="slash">/</span><span>Study Notes</span></div>
-          <header className="category-header"><h1 className="category-title">{route.value}</h1><p className="category-description">{route.value === "비전 모델" ? "이미지와 멀티모달 모델을 공부하며 남긴 기록." : route.value === "에너지 · 환경" ? "에너지와 환경 분야를 공부하며 남긴 기록." : "이 주제로 공부하며 남긴 기록."}</p></header>
+          <header className="category-header"><h1 className="category-title">{route.value}</h1><p className="category-description">{categoryIntro?.description ?? "이 주제로 공부하며 남긴 글을 모았습니다."}</p></header>
           <div className="list-meta"><span>{catPosts.length}개의 기록</span><span>최근 글부터</span></div>
           <div className="post-list">{catPosts.map(p => <PostCard key={p.id} p={p} goTo={goTo} />)}</div>
           {!catPosts.length && <p className="empty-result">아직 공개된 글이 없습니다.</p>}
@@ -756,7 +793,7 @@ export default function StudyGazette({ initialContent }) {
       </main>
 
       {reading && !!headings.length && <aside className="toc" aria-label="이 글의 목차"><div className="toc-title">On this page</div><div className="toc-links"><TocLinks headings={headings} active={activeHeading} /></div></aside>}
-      {inCategory && <aside className="category-aside"><strong>{route.value}</strong><p>공부하며 남긴 기록들을 모았습니다.</p><RouteLink to={{ name: "archive" }} goTo={goTo}>필요한 글 검색하기 →</RouteLink></aside>}
+      {inCategory && <aside className="category-aside"><strong>{route.value}</strong>{categoryIntro?.topics && <p>{categoryIntro.topics}</p>}<RouteLink to={{ name: "archive" }} goTo={goTo}>필요한 글 검색하기 →</RouteLink></aside>}
     </div>
     <footer className="footer"><span>The Study Gazette</span><span>{studyPosts.length} study notes · {PROJECTS.length} projects</span></footer>
     {lightbox && <div className="lb" role="dialog" aria-modal="true" aria-label="이미지 원본" onClick={() => setLightbox(null)}><button autoFocus className="lb-close" onClick={() => setLightbox(null)} aria-label="닫기">×</button><img src={lightbox} alt="이미지 원본" onClick={e => e.stopPropagation()} /></div>}
