@@ -320,6 +320,8 @@ button[disabled]{cursor:default;color:var(--muted)}
 .g-mermaid-preview{display:block;max-width:100%;margin:0 auto;padding:0;border:0;background:transparent;text-align:initial;cursor:zoom-in}
 .g-mermaid-drawing{display:block}
 .g-mermaid-drawing svg{width:100%;max-width:none!important;height:auto;display:block}
+/* Mermaid 11은 라벨을 <p>로 감싼다. 본문 p의 줄 간격(1.9)이 먹으면 두 줄 라벨이 상자 밖으로 잘리므로 Mermaid가 잰 값을 따른다. */
+.g-mermaid-drawing svg p{line-height:inherit;margin:0}
 .g-diagram-toolbar{display:flex;justify-content:flex-end;margin-bottom:8px}
 .g-diagram-toolbar button{border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--accent);padding:5px 10px;font-size:12px;line-height:1.6}
 .g-diagram-viewport:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
